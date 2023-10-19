@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sailbot_telemetry_flutter/pages/map.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,6 +12,8 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: [SystemUiOverlay.bottom]);
     return MaterialApp(
       title: 'SailbotTelemetry',
       theme: ThemeData(
