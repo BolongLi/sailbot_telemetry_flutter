@@ -4,7 +4,8 @@ import 'package:sailbot_telemetry_flutter/widgets/drawer.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:math';
-import 'dart:developer' as dev;
+import 'dart:developer' as dev; //log() conflicts with math
+import 'dart:async';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/messages.pb.dart';
@@ -35,6 +36,10 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  Socket? _socket;
+  final int retryDuration = 1; // duration in seconds
+  final int connectionTimeout = 1; // timeout duration in seconds
+
   @override
   void initState() {
     super.initState();
@@ -48,29 +53,45 @@ class _MapPageState extends State<MapPage> {
     InternetAddress address = addresses[0];
     const port = 1111;
     dev.log("about to connect", name: 'socket');
-    Socket socket = await Socket.connect(address, port,
-        timeout: const Duration(seconds: 1));
-    dev.log(
-        'Connected to: ${socket.remoteAddress.address}:${socket.remotePort}',
-        name: 'socket');
-    socket.listen((List<int> event) {
-      //final data = String.fromCharCodes(event);
-      dev.log("Received data!");
-      try {
-        BoatState boatState = BoatState.fromBuffer(event);
-        dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
-      } catch (e) {
-        dev.log("Error decoding protobuf!");
-      }
-      // setState(() {
-      //   //_data = data;
-      // });
-    }, onError: (error) {
-      dev.log("Socket error: $error", name: "socket");
-    }, onDone: () {
-      dev.log("Destroying socker", name: "socket");
-      socket.destroy();
-    });
+    try {
+      Socket socket = await Socket.connect(address, port,
+          timeout: Duration(seconds: connectionTimeout));
+      dev.log(
+          'Connected to: ${socket.remoteAddress.address}:${socket.remotePort}',
+          name: 'socket');
+      socket.listen((List<int> event) {
+        //final data = String.fromCharCodes(event);
+        dev.log("Received data!");
+        try {
+          BoatState boatState = BoatState.fromBuffer(event);
+          dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
+        } catch (e) {
+          dev.log("Error decoding protobuf!");
+        }
+        // setState(() {
+        //   //_data = data;
+        // });
+      }, onError: (error) {
+        dev.log("Socket error: $error", name: "socket");
+      }, onDone: () {
+        dev.log("Socket closed! did Sailbot crash? :(", name: "socket");
+        _handleSocketError();
+      });
+    } catch (e) {
+      dev.log('having trouble connecting to sailbot...: $e', name: 'socket');
+      _handleSocketError();
+    }
+  }
+
+  void _handleSocketError() {
+    // Close the socket (if not already closed)
+    if (_socket != null) {
+      _socket!.close();
+      _socket = null;
+    }
+
+    // Wait for a duration and then try to reconnect
+    Future.delayed(Duration(seconds: retryDuration), _setupSocket);
   }
 
   @override

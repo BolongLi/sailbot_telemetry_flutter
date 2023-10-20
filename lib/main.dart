@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sailbot_telemetry_flutter/pages/map.dart';
 import 'package:flutter/services.dart';
-import 'package:sailbot_telemetry_flutter/isolates/sailbot_comms.dart';
-import 'dart:isolate';
-import 'dart:async';
-import 'dart:developer';
 
 void main() async {
   // final receivePort = ReceivePort();
