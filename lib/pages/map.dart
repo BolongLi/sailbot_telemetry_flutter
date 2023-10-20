@@ -27,6 +27,7 @@ class _MapPageState extends State<MapPage> {
   double _heading = 0.0;
   double _trueWind = 0.0;
   double _apparentWind = 0.0;
+  LatLng _boatLatLng = LatLng(51.5, -0.09);
   final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
@@ -89,6 +90,7 @@ class _MapPageState extends State<MapPage> {
             _trueWind = boatState.trueWind.direction;
             _apparentWind = boatState.apparentWind.direction;
             _nodeStates = boatState.nodeStates;
+            _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
             bool allOk = true;
             bool error = false;
             bool warn = false;
@@ -173,6 +175,20 @@ class _MapPageState extends State<MapPage> {
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
                     ),
+                    MarkerLayer(markers: [
+                      Marker(
+                          point: _boatLatLng,
+                          height: 60,
+                          width: 60,
+                          child: Transform.rotate(
+                              angle: _heading * pi / 180,
+                              child: Image.file(File("assets/arrow.png")))),
+                      Marker(
+                          point: _boatLatLng,
+                          height: 30,
+                          width: 30,
+                          child: Image.file(File("assets/boat.png")))
+                    ])
                   ],
                 ),
               ),
