@@ -42,6 +42,11 @@ class _MapPageState extends State<MapPage> {
   double _heading = 0.0;
   double _trueWind = 0.0;
   double _apparentWind = 0.0;
+  final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
+  final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
+  Color _menuIconColor = const Color.fromARGB(255, 0, 0, 0);
+  var _nodeStates = <bool>[];
+  var _nodeNames = <String>[];
   Socket? _socket;
   final int retryDuration = 1; // duration in seconds
   final int connectionTimeout = 1; // timeout duration in seconds
@@ -75,7 +80,21 @@ class _MapPageState extends State<MapPage> {
             _speed = boatState.speedKnots;
             _trueWind = boatState.trueWind.direction;
             _apparentWind = boatState.apparentWind.direction;
-            dev.log("Apparent wind: $_apparentWind");
+            _nodeStates = boatState.nodeStates.nodeStates;
+            _nodeNames = boatState.nodeStates.nodeNames;
+            bool allOk = true;
+            for (bool status in boatState.nodeStates.nodeStates) {
+              if (!status) {
+                allOk = false;
+              }
+            }
+            if (allOk) {
+              _menuIconColor = _colorOk;
+            } else {
+              _menuIconColor = _colorError;
+            }
+
+            //dev.log("Apparent wind: $_apparentWind");
           });
           // dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
         } catch (e) {
@@ -114,7 +133,7 @@ class _MapPageState extends State<MapPage> {
       //   title: const Text('Map'),
       //   toolbarHeight: min(displayHeight(context) / 16, 40),
       // ),
-      drawer: buildDrawer(context, MapPage.route),
+      drawer: buildDrawer(context, MapPage.route, _nodeNames, _nodeStates),
       key: _scaffoldState,
       body: Padding(
         padding: const EdgeInsets.all(0),
@@ -193,6 +212,7 @@ class _MapPageState extends State<MapPage> {
             ),
             IconButton(
               icon: const Icon(Icons.menu),
+              color: _menuIconColor,
               onPressed: () {
                 _scaffoldState.currentState?.openDrawer();
               },
@@ -238,12 +258,12 @@ class _MapPageState extends State<MapPage> {
               lengthUnit: GaugeSizeUnit.factor,
               needleStartWidth: 1,
               needleEndWidth: 1,
-              needleColor: Color(0xFFD12525),
-              knobStyle: KnobStyle(
+              needleColor: const Color(0xFFD12525),
+              knobStyle: const KnobStyle(
                 knobRadius: 0.1,
                 color: Color(0xffc4c4c4),
               ),
-              tailStyle: TailStyle(
+              tailStyle: const TailStyle(
                 lengthUnit: GaugeSizeUnit.factor,
                 length: 0.7,
                 width: 1,
@@ -291,12 +311,12 @@ class _MapPageState extends State<MapPage> {
               lengthUnit: GaugeSizeUnit.factor,
               needleStartWidth: 1,
               needleEndWidth: 1,
-              needleColor: Color(0xFFD12525),
-              knobStyle: KnobStyle(
+              needleColor: const Color(0xFFD12525),
+              knobStyle: const KnobStyle(
                 knobRadius: 0.1,
                 color: Color(0xffc4c4c4),
               ),
-              tailStyle: TailStyle(
+              tailStyle: const TailStyle(
                 lengthUnit: GaugeSizeUnit.factor,
                 length: 0.7,
                 width: 1,
@@ -366,12 +386,12 @@ class _MapPageState extends State<MapPage> {
               lengthUnit: GaugeSizeUnit.factor,
               needleStartWidth: 1,
               needleEndWidth: 1,
-              needleColor: Color(0xFFD12525),
-              knobStyle: KnobStyle(
+              needleColor: const Color(0xFFD12525),
+              knobStyle: const KnobStyle(
                 knobRadius: 0.1,
                 color: Color(0xffc4c4c4),
               ),
-              tailStyle: TailStyle(
+              tailStyle: const TailStyle(
                 lengthUnit: GaugeSizeUnit.factor,
                 length: 0.7,
                 width: 1,
@@ -441,12 +461,12 @@ class _MapPageState extends State<MapPage> {
               lengthUnit: GaugeSizeUnit.factor,
               needleStartWidth: 1,
               needleEndWidth: 1,
-              needleColor: Color(0xFFD12525),
-              knobStyle: KnobStyle(
+              needleColor: const Color(0xFFD12525),
+              knobStyle: const KnobStyle(
                 knobRadius: 0.1,
                 color: Color(0xffc4c4c4),
               ),
-              tailStyle: TailStyle(
+              tailStyle: const TailStyle(
                 lengthUnit: GaugeSizeUnit.factor,
                 length: 0.7,
                 width: 1,

@@ -24,17 +24,40 @@ Widget _buildMenuItem(
   );
 }
 
-Drawer buildDrawer(BuildContext context, String currentRoute) {
+Drawer buildDrawer(BuildContext context, String currentRoute,
+    List<String> nodeNames, List<bool> nodeStates) {
+  var nodeStatusWidgets = <Widget>[];
+  int i = 0;
+  for (var nodeName in nodeNames) {
+    Widget newWidget = DecoratedBox(
+      decoration:
+          BoxDecoration(color: nodeStates[i] ? Colors.green : Colors.red),
+      child: Text(nodeName),
+    );
+    nodeStatusWidgets.add(newWidget);
+    i += 1;
+  }
+
   return Drawer(
-    child: ListView(
+    child: Row(
       children: <Widget>[
-        _buildMenuItem(
-          context,
-          const Text('Map'),
-          MapPage.route,
-          currentRoute,
-          icon: const Icon(Icons.home),
+        Expanded(
+          child: ListView(
+            children: <Widget>[
+              _buildMenuItem(
+                context,
+                const Text('Map'),
+                MapPage.route,
+                currentRoute,
+                icon: const Icon(Icons.home),
+              ),
+            ],
+          ),
         ),
+        Expanded(
+            child: ListView(
+          children: nodeStatusWidgets,
+        )),
       ],
     ),
   );
