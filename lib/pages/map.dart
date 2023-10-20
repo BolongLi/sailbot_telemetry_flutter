@@ -10,6 +10,8 @@ import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/messages.pb.dart';
 
+GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
+
 Size displaySize(BuildContext context) {
   return MediaQuery.of(context).size;
 }
@@ -108,6 +110,12 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // appBar: AppBar(
+      //   title: const Text('Map'),
+      //   toolbarHeight: min(displayHeight(context) / 16, 40),
+      // ),
+      drawer: buildDrawer(context, MapPage.route),
+      key: _scaffoldState,
       body: Padding(
         padding: const EdgeInsets.all(0),
         child: Stack(
@@ -167,16 +175,22 @@ class _MapPageState extends State<MapPage> {
                 children: <Widget>[
                   const Text("True wind"),
                   SizedBox(
-                      width: min(displayWidth(context) / 3, 150),
-                      height: min(displayWidth(context) / 3, 150),
+                      width: min(displayHeight(context) / 3, 150),
+                      height: min(displayHeight(context) / 3, 150),
                       child: _buildTrueWindGauge()),
                   const Text("Apparent wind"),
                   SizedBox(
-                      width: min(displayWidth(context) / 3, 150),
-                      height: min(displayWidth(context) / 3, 150),
+                      width: min(displayHeight(context) / 3, 150),
+                      height: min(displayHeight(context) / 3, 150),
                       child: _buildApparentWindGauge()),
                 ],
               ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () {
+                _scaffoldState.currentState?.openDrawer();
+              },
             ),
           ],
         ),
