@@ -123,10 +123,15 @@ class _MapPageState extends State<MapPage> {
             Flex(direction: Axis.horizontal, children: <Widget>[
               Flexible(
                 child: FlutterMap(
-                  options: const MapOptions(
-                    initialCenter: LatLng(51.5, -0.09),
-                    initialZoom: 5,
-                  ),
+                  options: MapOptions(
+                      initialCenter: LatLng(51.5, -0.09),
+                      initialZoom: 5,
+                      interactionOptions: InteractionOptions(
+                          flags: InteractiveFlag.all - InteractiveFlag.rotate,
+                          cursorKeyboardRotationOptions:
+                              CursorKeyboardRotationOptions(
+                            isKeyTrigger: (key) => false,
+                          ))),
                   children: [
                     TileLayer(
                       urlTemplate:
