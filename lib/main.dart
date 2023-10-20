@@ -4,14 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:sailbot_telemetry_flutter/isolates/sailbot_comms.dart';
 import 'dart:isolate';
 import 'dart:async';
+import 'dart:developer';
 
 void main() async {
-  final receivePort = ReceivePort();
-  Isolate isolate = await Isolate.spawn(SailbotComms.sailbotComms, receivePort);
-  receivePort.listen((data) {
-    // Handle the data/message sent from the secondary isolate
-    // For example, you can update your app's state here
-  });
+  // final receivePort = ReceivePort();
+  // log("about to launch isolate");
+  // Isolate isolate = await Isolate.spawn(SailbotComms.sailbotComms, receivePort);
+  // log("listening to data");
+  // receivePort.listen((data) {
+  //   // Handle the data/message sent from the secondary isolate
+  //   // For example, you can update your app's state here
+  // });
+  // log("launching app");
   runApp(const MyApp());
 }
 

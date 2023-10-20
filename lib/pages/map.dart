@@ -5,7 +5,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:math';
 import 'dart:developer' as dev;
-import 'package:sailbot_telemetry_flutter/widgets/AlignPositioned.dart';
+import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
+import 'dart:io';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/messages.pb.dart';
 
 Size displaySize(BuildContext context) {
   return MediaQuery.of(context).size;
@@ -33,6 +35,44 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  @override
+  void initState() {
+    super.initState();
+    _setupSocket();
+  }
+
+  _setupSocket() async {
+    String hostname =
+        'sailbot-orangepi.netbird.cloud'; // Replace this with your hostname
+    List<InternetAddress> addresses = await InternetAddress.lookup(hostname);
+    InternetAddress address = addresses[0];
+    const port = 1111;
+    dev.log("about to connect", name: 'socket');
+    Socket socket = await Socket.connect(address, port,
+        timeout: const Duration(seconds: 1));
+    dev.log(
+        'Connected to: ${socket.remoteAddress.address}:${socket.remotePort}',
+        name: 'socket');
+    socket.listen((List<int> event) {
+      //final data = String.fromCharCodes(event);
+      dev.log("Received data!");
+      try {
+        BoatState boatState = BoatState.fromBuffer(event);
+        dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
+      } catch (e) {
+        dev.log("Error decoding protobuf!");
+      }
+      // setState(() {
+      //   //_data = data;
+      // });
+    }, onError: (error) {
+      dev.log("Socket error: $error", name: "socket");
+    }, onDone: () {
+      dev.log("Destroying socker", name: "socket");
+      socket.destroy();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
