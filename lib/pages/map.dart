@@ -16,7 +16,7 @@ Size displaySize(BuildContext context) {
 
 double displayHeight(BuildContext context) {
   double height = displaySize(context).height;
-  dev.log("height is: $height", name: 'testing');
+  //dev.log("height is: $height", name: 'testing');
   return height;
 }
 
@@ -36,6 +36,10 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  double _speed = 0.0;
+  double _heading = 0.0;
+  double _trueWind = 0.0;
+  double _apparentWind = 0.0;
   Socket? _socket;
   final int retryDuration = 1; // duration in seconds
   final int connectionTimeout = 1; // timeout duration in seconds
@@ -61,10 +65,17 @@ class _MapPageState extends State<MapPage> {
           name: 'socket');
       socket.listen((List<int> event) {
         //final data = String.fromCharCodes(event);
-        dev.log("Received data!");
+        //dev.log("Received data!");
         try {
           BoatState boatState = BoatState.fromBuffer(event);
-          dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
+          setState(() {
+            _heading = boatState.currentHeading;
+            _speed = boatState.speedKnots;
+            _trueWind = boatState.trueWind.direction;
+            _apparentWind = boatState.apparentWind.direction;
+            dev.log("Apparent wind: $_apparentWind");
+          });
+          // dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
         } catch (e) {
           dev.log("Error decoding protobuf!");
         }
@@ -101,21 +112,23 @@ class _MapPageState extends State<MapPage> {
         padding: const EdgeInsets.all(0),
         child: Stack(
           children: [
-            Flexible(
-              child: FlutterMap(
-                options: const MapOptions(
-                  initialCenter: LatLng(51.5, -0.09),
-                  initialZoom: 5,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
+            Flex(direction: Axis.horizontal, children: <Widget>[
+              Flexible(
+                child: FlutterMap(
+                  options: const MapOptions(
+                    initialCenter: LatLng(51.5, -0.09),
+                    initialZoom: 5,
                   ),
-                ],
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ]),
             AlignPositioned(
               alignment: Alignment.bottomCenter,
               centerPoint: Offset(displayWidth(context) / 1.5, 0),
@@ -126,86 +139,9 @@ class _MapPageState extends State<MapPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       SizedBox(
-                        width: min(displayWidth(context) / 3, 150),
-                        height: min(displayWidth(context) / 3, 150),
-                        child: SfRadialGauge(
-                          axes: <RadialAxis>[
-                            RadialAxis(
-                              startAngle: 270,
-                              endAngle: 270,
-                              minimum: 0,
-                              maximum: 360,
-                              interval: 30,
-                              majorTickStyle: const MajorTickStyle(
-                                length: 0.16,
-                                lengthUnit: GaugeSizeUnit.factor,
-                                thickness: 1.5,
-                              ),
-                              minorTickStyle: const MinorTickStyle(
-                                length: 0.16,
-                                lengthUnit: GaugeSizeUnit.factor,
-                              ),
-                              minorTicksPerInterval: 10,
-                              showLabels: true,
-                              showTicks: true,
-                              ticksPosition: ElementsPosition.outside,
-                              labelsPosition: ElementsPosition.outside,
-                              offsetUnit: GaugeSizeUnit.factor,
-                              labelOffset: -0.2,
-                              radiusFactor: 0.75,
-                              showLastLabel: false,
-                              pointers: const <GaugePointer>[
-                                NeedlePointer(
-                                  value:
-                                      0, // Set your initial compass heading value
-                                  enableDragging: false,
-                                  needleLength: 0.7,
-                                  lengthUnit: GaugeSizeUnit.factor,
-                                  needleStartWidth: 1,
-                                  needleEndWidth: 1,
-                                  needleColor: Color(0xFFD12525),
-                                  knobStyle: KnobStyle(
-                                    knobRadius: 0.1,
-                                    color: Color(0xffc4c4c4),
-                                  ),
-                                  tailStyle: TailStyle(
-                                    lengthUnit: GaugeSizeUnit.factor,
-                                    length: 0.7,
-                                    width: 1,
-                                    color: Color(0xffc4c4c4),
-                                  ),
-                                ),
-                              ],
-                              annotations: const <GaugeAnnotation>[
-                                GaugeAnnotation(
-                                  axisValue: 270,
-                                  positionFactor: 0.6,
-                                  widget:
-                                      Text('W', style: TextStyle(fontSize: 16)),
-                                ),
-                                GaugeAnnotation(
-                                  axisValue: 90,
-                                  positionFactor: 0.6,
-                                  widget:
-                                      Text('E', style: TextStyle(fontSize: 16)),
-                                ),
-                                GaugeAnnotation(
-                                  axisValue: 0,
-                                  positionFactor: 0.6,
-                                  widget:
-                                      Text('N', style: TextStyle(fontSize: 16)),
-                                ),
-                                GaugeAnnotation(
-                                  axisValue: 180,
-                                  positionFactor: 0.6,
-                                  widget:
-                                      Text('S', style: TextStyle(fontSize: 16)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                          width: min(displayWidth(context) / 3, 150),
+                          height: min(displayWidth(context) / 3, 150),
+                          child: _buildHeadingGauge()),
                       const Text("heading"),
                     ],
                   ),
@@ -213,60 +149,9 @@ class _MapPageState extends State<MapPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       SizedBox(
-                        width: min(displayWidth(context) / 3, 150),
-                        height: min(displayWidth(context) / 3, 150),
-                        child: SfRadialGauge(
-                          axes: <RadialAxis>[
-                            RadialAxis(
-                              startAngle: 270,
-                              endAngle: 270,
-                              minimum: 0,
-                              maximum: 360,
-                              interval: 30,
-                              majorTickStyle: const MajorTickStyle(
-                                length: 0.16,
-                                lengthUnit: GaugeSizeUnit.factor,
-                                thickness: 1.5,
-                              ),
-                              minorTickStyle: const MinorTickStyle(
-                                length: 0.16,
-                                lengthUnit: GaugeSizeUnit.factor,
-                              ),
-                              minorTicksPerInterval: 10,
-                              showLabels: true,
-                              showTicks: true,
-                              ticksPosition: ElementsPosition.outside,
-                              labelsPosition: ElementsPosition.outside,
-                              offsetUnit: GaugeSizeUnit.factor,
-                              labelOffset: -0.2,
-                              radiusFactor: 0.75,
-                              showLastLabel: false,
-                              pointers: const <GaugePointer>[
-                                NeedlePointer(
-                                  value:
-                                      0, // Set your initial compass heading value
-                                  enableDragging: false,
-                                  needleLength: 0.7,
-                                  lengthUnit: GaugeSizeUnit.factor,
-                                  needleStartWidth: 1,
-                                  needleEndWidth: 1,
-                                  needleColor: Color(0xFFD12525),
-                                  knobStyle: KnobStyle(
-                                    knobRadius: 0.1,
-                                    color: Color(0xffc4c4c4),
-                                  ),
-                                  tailStyle: TailStyle(
-                                    lengthUnit: GaugeSizeUnit.factor,
-                                    length: 0.7,
-                                    width: 1,
-                                    color: Color(0xffc4c4c4),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                          width: min(displayWidth(context) / 3, 150),
+                          height: min(displayWidth(context) / 3, 150),
+                          child: _buildSpeedGauge()),
                       const Text("Speed"),
                     ],
                   ),
@@ -282,166 +167,298 @@ class _MapPageState extends State<MapPage> {
                 children: <Widget>[
                   const Text("True wind"),
                   SizedBox(
-                    width: min(displayWidth(context) / 3, 150),
-                    height: min(displayWidth(context) / 3, 150),
-                    child: SfRadialGauge(
-                      axes: <RadialAxis>[
-                        RadialAxis(
-                          startAngle: 270,
-                          endAngle: 270,
-                          minimum: 0,
-                          maximum: 360,
-                          interval: 30,
-                          majorTickStyle: const MajorTickStyle(
-                            length: 0.16,
-                            lengthUnit: GaugeSizeUnit.factor,
-                            thickness: 1.5,
-                          ),
-                          minorTickStyle: const MinorTickStyle(
-                            length: 0.16,
-                            lengthUnit: GaugeSizeUnit.factor,
-                          ),
-                          minorTicksPerInterval: 10,
-                          showLabels: true,
-                          showTicks: true,
-                          ticksPosition: ElementsPosition.outside,
-                          labelsPosition: ElementsPosition.outside,
-                          offsetUnit: GaugeSizeUnit.factor,
-                          labelOffset: -0.2,
-                          radiusFactor: 0.75,
-                          showLastLabel: false,
-                          pointers: const <GaugePointer>[
-                            NeedlePointer(
-                              value:
-                                  0, // Set your initial compass heading value
-                              enableDragging: false,
-                              needleLength: 0.7,
-                              lengthUnit: GaugeSizeUnit.factor,
-                              needleStartWidth: 1,
-                              needleEndWidth: 1,
-                              needleColor: Color(0xFFD12525),
-                              knobStyle: KnobStyle(
-                                knobRadius: 0.1,
-                                color: Color(0xffc4c4c4),
-                              ),
-                              tailStyle: TailStyle(
-                                lengthUnit: GaugeSizeUnit.factor,
-                                length: 0.7,
-                                width: 1,
-                                color: Color(0xffc4c4c4),
-                              ),
-                            ),
-                          ],
-                          annotations: const <GaugeAnnotation>[
-                            GaugeAnnotation(
-                              axisValue: 270,
-                              positionFactor: 0.6,
-                              widget: Text('W', style: TextStyle(fontSize: 16)),
-                            ),
-                            GaugeAnnotation(
-                              axisValue: 90,
-                              positionFactor: 0.6,
-                              widget: Text('E', style: TextStyle(fontSize: 16)),
-                            ),
-                            GaugeAnnotation(
-                              axisValue: 0,
-                              positionFactor: 0.6,
-                              widget: Text('N', style: TextStyle(fontSize: 16)),
-                            ),
-                            GaugeAnnotation(
-                              axisValue: 180,
-                              positionFactor: 0.6,
-                              widget: Text('S', style: TextStyle(fontSize: 16)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                      width: min(displayWidth(context) / 3, 150),
+                      height: min(displayWidth(context) / 3, 150),
+                      child: _buildTrueWindGauge()),
                   const Text("Apparent wind"),
                   SizedBox(
-                    width: min(displayWidth(context) / 3, 150),
-                    height: min(displayWidth(context) / 3, 150),
-                    child: SfRadialGauge(
-                      axes: <RadialAxis>[
-                        RadialAxis(
-                          startAngle: 270,
-                          endAngle: 270,
-                          minimum: 0,
-                          maximum: 360,
-                          interval: 30,
-                          majorTickStyle: const MajorTickStyle(
-                            length: 0.16,
-                            lengthUnit: GaugeSizeUnit.factor,
-                            thickness: 1.5,
-                          ),
-                          minorTickStyle: const MinorTickStyle(
-                            length: 0.16,
-                            lengthUnit: GaugeSizeUnit.factor,
-                          ),
-                          minorTicksPerInterval: 10,
-                          showLabels: true,
-                          showTicks: true,
-                          ticksPosition: ElementsPosition.outside,
-                          labelsPosition: ElementsPosition.outside,
-                          offsetUnit: GaugeSizeUnit.factor,
-                          labelOffset: -0.2,
-                          radiusFactor: 0.75,
-                          showLastLabel: false,
-                          pointers: const <GaugePointer>[
-                            NeedlePointer(
-                              value:
-                                  0, // Set your initial compass heading value
-                              enableDragging: false,
-                              needleLength: 0.7,
-                              lengthUnit: GaugeSizeUnit.factor,
-                              needleStartWidth: 1,
-                              needleEndWidth: 1,
-                              needleColor: Color(0xFFD12525),
-                              knobStyle: KnobStyle(
-                                knobRadius: 0.1,
-                                color: Color(0xffc4c4c4),
-                              ),
-                              tailStyle: TailStyle(
-                                lengthUnit: GaugeSizeUnit.factor,
-                                length: 0.7,
-                                width: 1,
-                                color: Color(0xffc4c4c4),
-                              ),
-                            ),
-                          ],
-                          annotations: const <GaugeAnnotation>[
-                            GaugeAnnotation(
-                              axisValue: 270,
-                              positionFactor: 0.6,
-                              widget: Text('W', style: TextStyle(fontSize: 16)),
-                            ),
-                            GaugeAnnotation(
-                              axisValue: 90,
-                              positionFactor: 0.6,
-                              widget: Text('E', style: TextStyle(fontSize: 16)),
-                            ),
-                            GaugeAnnotation(
-                              axisValue: 0,
-                              positionFactor: 0.6,
-                              widget: Text('N', style: TextStyle(fontSize: 16)),
-                            ),
-                            GaugeAnnotation(
-                              axisValue: 180,
-                              positionFactor: 0.6,
-                              widget: Text('S', style: TextStyle(fontSize: 16)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                      width: min(displayWidth(context) / 3, 150),
+                      height: min(displayWidth(context) / 3, 150),
+                      child: _buildApparentWindGauge()),
                 ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  SfRadialGauge _buildSpeedGauge() {
+    return SfRadialGauge(
+      axes: <RadialAxis>[
+        RadialAxis(
+          startAngle: 270,
+          endAngle: 270,
+          minimum: 0,
+          maximum: 360,
+          interval: 30,
+          majorTickStyle: const MajorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+            thickness: 1.5,
+          ),
+          minorTickStyle: const MinorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+          ),
+          minorTicksPerInterval: 10,
+          showLabels: true,
+          showTicks: true,
+          ticksPosition: ElementsPosition.outside,
+          labelsPosition: ElementsPosition.outside,
+          offsetUnit: GaugeSizeUnit.factor,
+          labelOffset: -0.2,
+          radiusFactor: 0.75,
+          showLastLabel: false,
+          pointers: <GaugePointer>[
+            NeedlePointer(
+              value: _speed,
+              enableDragging: false,
+              needleLength: 0.7,
+              lengthUnit: GaugeSizeUnit.factor,
+              needleStartWidth: 1,
+              needleEndWidth: 1,
+              needleColor: Color(0xFFD12525),
+              knobStyle: KnobStyle(
+                knobRadius: 0.1,
+                color: Color(0xffc4c4c4),
+              ),
+              tailStyle: TailStyle(
+                lengthUnit: GaugeSizeUnit.factor,
+                length: 0.7,
+                width: 1,
+                color: Color(0xffc4c4c4),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  SfRadialGauge _buildHeadingGauge() {
+    return SfRadialGauge(
+      axes: <RadialAxis>[
+        RadialAxis(
+          startAngle: 270,
+          endAngle: 270,
+          minimum: 0,
+          maximum: 360,
+          interval: 30,
+          majorTickStyle: const MajorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+            thickness: 1.5,
+          ),
+          minorTickStyle: const MinorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+          ),
+          minorTicksPerInterval: 10,
+          showLabels: true,
+          showTicks: true,
+          ticksPosition: ElementsPosition.outside,
+          labelsPosition: ElementsPosition.outside,
+          offsetUnit: GaugeSizeUnit.factor,
+          labelOffset: -0.2,
+          radiusFactor: 0.75,
+          showLastLabel: false,
+          pointers: <GaugePointer>[
+            NeedlePointer(
+              value: _heading,
+              enableDragging: false,
+              needleLength: 0.7,
+              lengthUnit: GaugeSizeUnit.factor,
+              needleStartWidth: 1,
+              needleEndWidth: 1,
+              needleColor: Color(0xFFD12525),
+              knobStyle: KnobStyle(
+                knobRadius: 0.1,
+                color: Color(0xffc4c4c4),
+              ),
+              tailStyle: TailStyle(
+                lengthUnit: GaugeSizeUnit.factor,
+                length: 0.7,
+                width: 1,
+                color: Color(0xffc4c4c4),
+              ),
+            ),
+          ],
+          annotations: const <GaugeAnnotation>[
+            GaugeAnnotation(
+              axisValue: 270,
+              positionFactor: 0.6,
+              widget: Text('W', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 90,
+              positionFactor: 0.6,
+              widget: Text('E', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 0,
+              positionFactor: 0.6,
+              widget: Text('N', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 180,
+              positionFactor: 0.6,
+              widget: Text('S', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  SfRadialGauge _buildTrueWindGauge() {
+    return SfRadialGauge(
+      axes: <RadialAxis>[
+        RadialAxis(
+          startAngle: 270,
+          endAngle: 270,
+          minimum: 0,
+          maximum: 360,
+          interval: 30,
+          majorTickStyle: const MajorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+            thickness: 1.5,
+          ),
+          minorTickStyle: const MinorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+          ),
+          minorTicksPerInterval: 10,
+          showLabels: true,
+          showTicks: true,
+          ticksPosition: ElementsPosition.outside,
+          labelsPosition: ElementsPosition.outside,
+          offsetUnit: GaugeSizeUnit.factor,
+          labelOffset: -0.2,
+          radiusFactor: 0.75,
+          showLastLabel: false,
+          pointers: <GaugePointer>[
+            NeedlePointer(
+              value: _trueWind, // Set your initial compass heading value
+              enableDragging: false,
+              needleLength: 0.7,
+              lengthUnit: GaugeSizeUnit.factor,
+              needleStartWidth: 1,
+              needleEndWidth: 1,
+              needleColor: Color(0xFFD12525),
+              knobStyle: KnobStyle(
+                knobRadius: 0.1,
+                color: Color(0xffc4c4c4),
+              ),
+              tailStyle: TailStyle(
+                lengthUnit: GaugeSizeUnit.factor,
+                length: 0.7,
+                width: 1,
+                color: Color(0xffc4c4c4),
+              ),
+            ),
+          ],
+          annotations: const <GaugeAnnotation>[
+            GaugeAnnotation(
+              axisValue: 270,
+              positionFactor: 0.6,
+              widget: Text('W', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 90,
+              positionFactor: 0.6,
+              widget: Text('E', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 0,
+              positionFactor: 0.6,
+              widget: Text('N', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 180,
+              positionFactor: 0.6,
+              widget: Text('S', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  SfRadialGauge _buildApparentWindGauge() {
+    return SfRadialGauge(
+      axes: <RadialAxis>[
+        RadialAxis(
+          startAngle: 270,
+          endAngle: 270,
+          minimum: 0,
+          maximum: 360,
+          interval: 30,
+          majorTickStyle: const MajorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+            thickness: 1.5,
+          ),
+          minorTickStyle: const MinorTickStyle(
+            length: 0.16,
+            lengthUnit: GaugeSizeUnit.factor,
+          ),
+          minorTicksPerInterval: 10,
+          showLabels: true,
+          showTicks: true,
+          ticksPosition: ElementsPosition.outside,
+          labelsPosition: ElementsPosition.outside,
+          offsetUnit: GaugeSizeUnit.factor,
+          labelOffset: -0.2,
+          radiusFactor: 0.75,
+          showLastLabel: false,
+          pointers: <GaugePointer>[
+            NeedlePointer(
+              value: _apparentWind, // Set your initial compass heading value
+              enableDragging: false,
+              needleLength: 0.7,
+              lengthUnit: GaugeSizeUnit.factor,
+              needleStartWidth: 1,
+              needleEndWidth: 1,
+              needleColor: Color(0xFFD12525),
+              knobStyle: KnobStyle(
+                knobRadius: 0.1,
+                color: Color(0xffc4c4c4),
+              ),
+              tailStyle: TailStyle(
+                lengthUnit: GaugeSizeUnit.factor,
+                length: 0.7,
+                width: 1,
+                color: Color(0xffc4c4c4),
+              ),
+            ),
+          ],
+          annotations: const <GaugeAnnotation>[
+            GaugeAnnotation(
+              axisValue: 270,
+              positionFactor: 0.6,
+              widget: Text('W', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 90,
+              positionFactor: 0.6,
+              widget: Text('E', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 0,
+              positionFactor: 0.6,
+              widget: Text('N', style: TextStyle(fontSize: 16)),
+            ),
+            GaugeAnnotation(
+              axisValue: 180,
+              positionFactor: 0.6,
+              widget: Text('S', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
