@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
@@ -8,9 +9,9 @@ import 'dart:developer' as dev; //log() conflicts with math
 import 'dart:async';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
-import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
+import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 
 GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
@@ -34,7 +35,9 @@ class _MapPageState extends State<MapPage> {
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
   Color _menuIconColor = const Color.fromARGB(255, 0, 0, 0);
   var _nodeStates = <NodeInfo>[];
-  Socket? _socket;
+
+  NetworkComms? networkComms;
+  //Socket? _socket;
   final int retryDuration = 1; // duration in seconds
   final int connectionTimeout = 1; // timeout duration in seconds
 
@@ -64,86 +67,120 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    _setupSocket();
+    networkComms = NetworkComms(receiveBoatState);
   }
 
-  _setupSocket() async {
-    String hostname =
-        'sailbot-orangepi.netbird.cloud'; // Replace this with your hostname
-    List<InternetAddress> addresses = await InternetAddress.lookup(hostname);
-    InternetAddress address = addresses[0];
-    const port = 1111;
-    dev.log("about to connect", name: 'socket');
-    try {
-      Socket socket = await Socket.connect(address, port,
-          timeout: Duration(seconds: connectionTimeout));
-      dev.log(
-          'Connected to: ${socket.remoteAddress.address}:${socket.remotePort}',
-          name: 'socket');
-      socket.listen((List<int> event) {
-        //final data = String.fromCharCodes(event);
-        //dev.log("Received data!");
-        try {
-          BoatState boatState = BoatState.fromBuffer(event);
-          setState(() {
-            _heading = boatState.currentHeading;
-            _speed = boatState.speedKnots;
-            _trueWind = boatState.trueWind.direction;
-            _apparentWind = boatState.apparentWind.direction;
-            _nodeStates = boatState.nodeStates;
-            _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
-            bool allOk = true;
-            bool error = false;
-            bool warn = false;
-            for (NodeInfo status in boatState.nodeStates) {
-              if (status.status == NodeStatus.ERROR) {
-                allOk = false;
-                error = true;
-              }
-              if (status.status == NodeStatus.WARN) {
-                allOk = false;
-                warn = true;
-              }
-            }
-            if (allOk) {
-              _menuIconColor = _colorOk;
-            } else {
-              if (warn) _menuIconColor = _colorWarn;
-              if (error) _menuIconColor = _colorError;
-            }
+  _updateRudderAngle(double angle) {
+    networkComms?.updateRudderAngle(angle);
+  }
 
-            //dev.log("Apparent wind: $_apparentWind");
-          });
-          // dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
-        } catch (e) {
-          dev.log("Error decoding protobuf!");
-          _handleSocketError();
+  receiveBoatState(BoatState boatState) {
+    setState(() {
+      _heading = boatState.currentHeading;
+      _speed = boatState.speedKnots;
+      _trueWind = boatState.trueWind.direction;
+      _apparentWind = boatState.apparentWind.direction;
+      _nodeStates = boatState.nodeStates;
+      _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
+      bool allOk = true;
+      bool error = false;
+      bool warn = false;
+      for (NodeInfo status in boatState.nodeStates) {
+        if (status.status == NodeStatus.ERROR) {
+          allOk = false;
+          error = true;
         }
-        // setState(() {
-        //   //_data = data;
-        // });
-      }, onError: (error) {
-        dev.log("Socket error: $error", name: "socket");
-      }, onDone: () {
-        dev.log("Socket closed! did Sailbot crash? :(", name: "socket");
-        _handleSocketError();
-      });
-    } catch (e) {
-      dev.log('having trouble connecting to sailbot...: $e', name: 'socket');
-      _handleSocketError();
-    }
+        if (status.status == NodeStatus.WARN) {
+          allOk = false;
+          warn = true;
+        }
+      }
+      if (allOk) {
+        _menuIconColor = _colorOk;
+      } else {
+        if (warn) _menuIconColor = _colorWarn;
+        if (error) _menuIconColor = _colorError;
+      }
+      //dev.log("Apparent wind: $_apparentWind");
+    });
   }
+  // _setupSocket() async {
+  //   String hostname =
+  //       'sailbot-orangepi.netbird.cloud'; // Replace this with your hostname
+  //   List<InternetAddress> addresses = await InternetAddress.lookup(hostname);
+  //   InternetAddress address = addresses[0];
+  //   const port = 1111;
+  //   dev.log("about to connect", name: 'socket');
+  //   try {
+  //     _socket = await Socket.connect(address, port,
+  //         timeout: Duration(seconds: connectionTimeout));
+  //     dev.log(
+  //         'Connected to: ${_socket?.remoteAddress.address}:${_socket?.remotePort}',
+  //         name: 'socket');
+  //     _socket?.listen((List<int> event) {
+  //       //final data = String.fromCharCodes(event);
+  //       //dev.log("Received data!");
+  //       try {
+  //         BoatState boatState = BoatState.fromBuffer(event);
+  //         setState(() {
+  //           _heading = boatState.currentHeading;
+  //           _speed = boatState.speedKnots;
+  //           _trueWind = boatState.trueWind.direction;
+  //           _apparentWind = boatState.apparentWind.direction;
+  //           _nodeStates = boatState.nodeStates;
+  //           _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
+  //           bool allOk = true;
+  //           bool error = false;
+  //           bool warn = false;
+  //           for (NodeInfo status in boatState.nodeStates) {
+  //             if (status.status == NodeStatus.ERROR) {
+  //               allOk = false;
+  //               error = true;
+  //             }
+  //             if (status.status == NodeStatus.WARN) {
+  //               allOk = false;
+  //               warn = true;
+  //             }
+  //           }
+  //           if (allOk) {
+  //             _menuIconColor = _colorOk;
+  //           } else {
+  //             if (warn) _menuIconColor = _colorWarn;
+  //             if (error) _menuIconColor = _colorError;
+  //           }
 
-  void _handleSocketError() {
-    // Close the socket (if not already closed)
-    if (_socket != null) {
-      _socket!.close();
-      _socket = null;
-    }
+  //           //dev.log("Apparent wind: $_apparentWind");
+  //         });
+  //         // dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
+  //       } catch (e) {
+  //         dev.log("Error decoding protobuf!");
+  //         _handleSocketError();
+  //       }
+  //       // setState(() {
+  //       //   //_data = data;
+  //       // });
+  //     }, onError: (error) {
+  //       dev.log("Socket error: $error", name: "socket");
+  //     }, onDone: () {
+  //       dev.log("Socket closed! did Sailbot crash? :(", name: "socket");
+  //       _handleSocketError();
+  //     });
+  //   } catch (e) {
+  //     dev.log('having trouble connecting to sailbot...: $e', name: 'socket');
+  //     _handleSocketError();
+  //   }
+  // }
 
-    // Wait for a duration and then try to reconnect
-    Future.delayed(Duration(seconds: retryDuration), _setupSocket);
-  }
+  // void _handleSocketError() {
+  //   // Close the socket (if not already closed)
+  //   if (_socket != null) {
+  //     _socket!.close();
+  //     _socket = null;
+  //   }
+
+  //   // Wait for a duration and then try to reconnect
+  //   Future.delayed(Duration(seconds: retryDuration), _setupSocket);
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -256,7 +293,11 @@ class _MapPageState extends State<MapPage> {
               alignment: Alignment.center,
               centerPoint:
                   Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-              child: CircleDragWidget(width: 200, height: 100, radius: 10),
+              child: CircleDragWidget(
+                  width: 200,
+                  height: 100,
+                  radius: 10,
+                  callback: _updateRudderAngle),
             ),
           ],
         ),

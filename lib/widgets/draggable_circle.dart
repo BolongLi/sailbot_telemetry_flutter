@@ -5,11 +5,13 @@ class CircleDragWidget extends StatefulWidget {
   final double width;
   final double height;
   final double radius;
+  Function callback;
 
   CircleDragWidget({
     required this.width,
     required this.height,
     required this.radius,
+    required this.callback,
   });
 
   @override
@@ -48,7 +50,7 @@ class _CircleDragWidgetState extends State<CircleDragWidget> {
   void _updateCirclePosition(double dx) {
     if (dx < 0 || dx > widget.width) return;
     double angle = (dx - (widget.width / 2)) / (widget.width / 2) * (pi / 2);
-
+    widget.callback(angle);
     double circleX = widget.width / 2 + lineLength * sin(angle);
     double circleY = lineLength * cos(angle);
 
