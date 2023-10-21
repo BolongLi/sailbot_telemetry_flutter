@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 class CircleDragWidget extends StatefulWidget {
   final double width;
@@ -17,6 +18,7 @@ class CircleDragWidget extends StatefulWidget {
 
 class _CircleDragWidgetState extends State<CircleDragWidget> {
   Offset position;
+  final double lineLength = 80.0;
 
   _CircleDragWidgetState() : position = Offset(100, 100);
 
@@ -29,21 +31,10 @@ class _CircleDragWidgetState extends State<CircleDragWidget> {
             BoxConstraints.tightFor(width: widget.width, height: widget.height),
         child: GestureDetector(
           onPanDown: (details) {
-            final validX = position.dx
-                .clamp(0.0 + widget.radius, widget.width - widget.radius);
-            final validY = position.dy
-                .clamp(0.0 + widget.radius, widget.height - widget.radius);
-            if ((details.localPosition - Offset(validX, validY)).distance <=
-                widget.radius) {
-              setState(() {
-                position = details.localPosition;
-              });
-            }
+            _updateCirclePosition(details.localPosition.dx);
           },
           onPanUpdate: (details) {
-            setState(() {
-              position = details.localPosition;
-            });
+            _updateCirclePosition(details.localPosition.dx);
           },
           child: CustomPaint(
             painter: CirclePainter(position, widget.radius),
@@ -52,6 +43,18 @@ class _CircleDragWidgetState extends State<CircleDragWidget> {
         ),
       ),
     );
+  }
+
+  void _updateCirclePosition(double dx) {
+    if (dx < 0 || dx > widget.width) return;
+    double angle = (dx - (widget.width / 2)) / (widget.width / 2) * (pi / 2);
+
+    double circleX = widget.width / 2 + lineLength * sin(angle);
+    double circleY = lineLength * cos(angle);
+
+    setState(() {
+      position = Offset(circleX, circleY);
+    });
   }
 }
 

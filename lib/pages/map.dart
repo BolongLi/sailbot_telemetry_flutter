@@ -256,7 +256,7 @@ class _MapPageState extends State<MapPage> {
               alignment: Alignment.center,
               centerPoint:
                   Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-              child: CircleDragWidget(width: 100, height: 100, radius: 10),
+              child: CircleDragWidget(width: 200, height: 100, radius: 10),
             ),
           ],
         ),
