@@ -10,6 +10,7 @@ import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
+import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
 
 GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
@@ -250,6 +251,12 @@ class _MapPageState extends State<MapPage> {
               onPressed: () {
                 _scaffoldState.currentState?.openDrawer();
               },
+            ),
+            AlignPositioned(
+              alignment: Alignment.center,
+              centerPoint:
+                  Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+              child: CircleDragWidget(width: 100, height: 100, radius: 10),
             ),
           ],
         ),
