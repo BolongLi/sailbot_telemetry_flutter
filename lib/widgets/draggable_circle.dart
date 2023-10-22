@@ -4,12 +4,14 @@ import 'dart:math';
 class CircleDragWidget extends StatefulWidget {
   final double width;
   final double height;
+  final double lineLength;
   final double radius;
   Function callback;
 
   CircleDragWidget({
     required this.width,
     required this.height,
+    required this.lineLength,
     required this.radius,
     required this.callback,
   });
@@ -20,7 +22,6 @@ class CircleDragWidget extends StatefulWidget {
 
 class _CircleDragWidgetState extends State<CircleDragWidget> {
   Offset position;
-  final double lineLength = 80.0;
 
   _CircleDragWidgetState() : position = Offset(100, 100);
 
@@ -51,8 +52,8 @@ class _CircleDragWidgetState extends State<CircleDragWidget> {
     if (dx < 0 || dx > widget.width) return;
     double angle = (dx - (widget.width / 2)) / (widget.width / 2) * (pi / 2);
     widget.callback(angle);
-    double circleX = widget.width / 2 + lineLength * sin(angle);
-    double circleY = lineLength * cos(angle);
+    double circleX = widget.width / 2 + widget.lineLength * sin(angle);
+    double circleY = widget.lineLength * cos(angle);
 
     setState(() {
       position = Offset(circleX, circleY);

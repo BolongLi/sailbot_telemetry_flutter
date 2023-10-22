@@ -70,4 +70,8 @@ class NetworkComms {
   updateRudderAngle(double angle) {
     _sendControlCommand(angle, ControlType.CONTROL_TYPE_RUDDER);
   }
+
+  updateTrimtabAngle(double angle) {
+    _sendControlCommand(angle, ControlType.CONTROL_TYPE_TRIM_TAB);
+  }
 }

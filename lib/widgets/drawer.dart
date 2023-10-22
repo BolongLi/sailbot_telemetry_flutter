@@ -34,10 +34,10 @@ Drawer buildDrawer(
   const Color colorError = Color.fromARGB(255, 255, 0, 0);
   for (NodeInfo nodeInfo in nodeStates) {
     Color color = colorOk;
-    if (nodeInfo.status == NodeStatus.WARN) {
+    if (nodeInfo.status == NodeStatus.NODE_STATUS_WARN) {
       color = colorWarn;
     }
-    if (nodeInfo.status == NodeStatus.ERROR) {
+    if (nodeInfo.status == NodeStatus.NODE_STATUS_ERROR) {
       color = colorError;
     }
     Widget newWidget = DecoratedBox(

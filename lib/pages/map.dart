@@ -35,6 +35,7 @@ class _MapPageState extends State<MapPage> {
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
   Color _menuIconColor = const Color.fromARGB(255, 0, 0, 0);
   var _nodeStates = <NodeInfo>[];
+  var _polylines = <Polyline>[];
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -79,6 +80,10 @@ class _MapPageState extends State<MapPage> {
     networkComms?.updateRudderAngle(angle);
   }
 
+  _updateTrimtabAngle(double angle) {
+    networkComms?.updateTrimtabAngle(angle);
+  }
+
   receiveBoatState(BoatState boatState) {
     setState(() {
       _heading = boatState.currentHeading;
@@ -87,15 +92,34 @@ class _MapPageState extends State<MapPage> {
       _apparentWind = boatState.apparentWind.direction;
       _nodeStates = boatState.nodeStates;
       _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
+
+      //path lines
+      _polylines.clear();
+      var boat_points = boatState.currentPath.points;
+      var points = <LatLng>[];
+      if (boat_points.isNotEmpty) {
+        points.add(_boatLatLng);
+      }
+      for (var point in boat_points) {
+        points.add(LatLng(point.latitude, point.longitude));
+      }
+      _polylines.add(Polyline(
+        points: points,
+        strokeWidth: 4,
+        color: Colors.blue.withOpacity(0.6),
+        borderStrokeWidth: 6,
+        borderColor: Colors.red.withOpacity(0.4),
+      ));
+
       bool allOk = true;
       bool error = false;
       bool warn = false;
       for (NodeInfo status in boatState.nodeStates) {
-        if (status.status == NodeStatus.ERROR) {
+        if (status.status == NodeStatus.NODE_STATUS_ERROR) {
           allOk = false;
           error = true;
         }
-        if (status.status == NodeStatus.WARN) {
+        if (status.status == NodeStatus.NODE_STATUS_WARN) {
           allOk = false;
           warn = true;
         }
@@ -149,7 +173,8 @@ class _MapPageState extends State<MapPage> {
                           height: 30,
                           width: 30,
                           child: Image.asset("assets/boat.png"))
-                    ])
+                    ]),
+                    PolylineLayer(polylines: _polylines),
                   ],
                 ),
               ),
@@ -212,15 +237,33 @@ class _MapPageState extends State<MapPage> {
                 _scaffoldState.currentState?.openDrawer();
               },
             ),
-            AlignPositioned(
-              alignment: Alignment.center,
-              centerPoint:
-                  Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-              child: CircleDragWidget(
-                  width: 200,
-                  height: 100,
-                  radius: 10,
-                  callback: _updateRudderAngle),
+            Transform.translate(
+              offset: const Offset(-40, -40),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                // centerPoint:
+                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+                child: CircleDragWidget(
+                    width: 100,
+                    height: 50,
+                    lineLength: 40,
+                    radius: 5,
+                    callback: _updateRudderAngle),
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(-40, -40),
+              child: Align(
+                alignment: Alignment.bottomRight,
+                // centerPoint:
+                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+                child: CircleDragWidget(
+                    width: 100,
+                    height: 50,
+                    lineLength: 40,
+                    radius: 5,
+                    callback: _updateTrimtabAngle),
+              ),
             ),
           ],
         ),
