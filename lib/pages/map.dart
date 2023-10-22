@@ -106,94 +106,12 @@ class _MapPageState extends State<MapPage> {
         if (warn) _menuIconColor = _colorWarn;
         if (error) _menuIconColor = _colorError;
       }
-      //dev.log("Apparent wind: $_apparentWind");
     });
   }
-  // _setupSocket() async {
-  //   String hostname =
-  //       'sailbot-orangepi.netbird.cloud'; // Replace this with your hostname
-  //   List<InternetAddress> addresses = await InternetAddress.lookup(hostname);
-  //   InternetAddress address = addresses[0];
-  //   const port = 1111;
-  //   dev.log("about to connect", name: 'socket');
-  //   try {
-  //     _socket = await Socket.connect(address, port,
-  //         timeout: Duration(seconds: connectionTimeout));
-  //     dev.log(
-  //         'Connected to: ${_socket?.remoteAddress.address}:${_socket?.remotePort}',
-  //         name: 'socket');
-  //     _socket?.listen((List<int> event) {
-  //       //final data = String.fromCharCodes(event);
-  //       //dev.log("Received data!");
-  //       try {
-  //         BoatState boatState = BoatState.fromBuffer(event);
-  //         setState(() {
-  //           _heading = boatState.currentHeading;
-  //           _speed = boatState.speedKnots;
-  //           _trueWind = boatState.trueWind.direction;
-  //           _apparentWind = boatState.apparentWind.direction;
-  //           _nodeStates = boatState.nodeStates;
-  //           _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
-  //           bool allOk = true;
-  //           bool error = false;
-  //           bool warn = false;
-  //           for (NodeInfo status in boatState.nodeStates) {
-  //             if (status.status == NodeStatus.ERROR) {
-  //               allOk = false;
-  //               error = true;
-  //             }
-  //             if (status.status == NodeStatus.WARN) {
-  //               allOk = false;
-  //               warn = true;
-  //             }
-  //           }
-  //           if (allOk) {
-  //             _menuIconColor = _colorOk;
-  //           } else {
-  //             if (warn) _menuIconColor = _colorWarn;
-  //             if (error) _menuIconColor = _colorError;
-  //           }
-
-  //           //dev.log("Apparent wind: $_apparentWind");
-  //         });
-  //         // dev.log('Received: ${boatState.speedKnots}', name: 'protobuf');
-  //       } catch (e) {
-  //         dev.log("Error decoding protobuf!");
-  //         _handleSocketError();
-  //       }
-  //       // setState(() {
-  //       //   //_data = data;
-  //       // });
-  //     }, onError: (error) {
-  //       dev.log("Socket error: $error", name: "socket");
-  //     }, onDone: () {
-  //       dev.log("Socket closed! did Sailbot crash? :(", name: "socket");
-  //       _handleSocketError();
-  //     });
-  //   } catch (e) {
-  //     dev.log('having trouble connecting to sailbot...: $e', name: 'socket');
-  //     _handleSocketError();
-  //   }
-  // }
-
-  // void _handleSocketError() {
-  //   // Close the socket (if not already closed)
-  //   if (_socket != null) {
-  //     _socket!.close();
-  //     _socket = null;
-  //   }
-
-  //   // Wait for a duration and then try to reconnect
-  //   Future.delayed(Duration(seconds: retryDuration), _setupSocket);
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text('Map'),
-      //   toolbarHeight: min(displayHeight(context) / 16, 40),
-      // ),
       drawer: buildDrawer(context, MapPage.route, _nodeStates),
       key: _scaffoldState,
       body: Padding(
@@ -218,20 +136,20 @@ class _MapPageState extends State<MapPage> {
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
                     ),
-                    // MarkerLayer(markers: [
-                    //   Marker(
-                    //       point: _boatLatLng,
-                    //       height: 60,
-                    //       width: 60,
-                    //       child: Transform.rotate(
-                    //           angle: _heading * pi / 180,
-                    //           child: Image.file(File("assets/arrow.png")))),
-                    //   Marker(
-                    //       point: _boatLatLng,
-                    //       height: 30,
-                    //       width: 30,
-                    //       child: Image.file(File("assets/boat.png")))
-                    // ])
+                    MarkerLayer(markers: [
+                      Marker(
+                          point: _boatLatLng,
+                          height: 60,
+                          width: 60,
+                          child: Transform.rotate(
+                              angle: _heading * pi / 180,
+                              child: Image.asset("assets/arrow.png"))),
+                      Marker(
+                          point: _boatLatLng,
+                          height: 30,
+                          width: 30,
+                          child: Image.asset("assets/boat.png"))
+                    ])
                   ],
                 ),
               ),

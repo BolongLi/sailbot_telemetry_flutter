@@ -5,11 +5,9 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/con
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/connect.pbgrpc.dart';
 import 'dart:developer' as dev; //log() conflicts with math
 
-//client for ControlCommand, server for BoatState. Could separate.
 class NetworkComms {
   ExecuteControlCommandServiceClient? _controlCommandStub;
   SendBoatStateServiceClient? _sendBoatStateStub;
-  //ConnectToBoatServiceClient? _connectRequestStub;
   Function _boatStateCallback;
 
   NetworkComms(this._boatStateCallback) {
@@ -21,17 +19,6 @@ class NetworkComms {
       });
     });
   }
-
-  // //constructor bodies cannot be async
-  // Future<void> init() async {
-  //   final server = Server.create(services: [this]);
-  //   dev.log("Created server", name: "network");
-  //   await server.serve(port: 50052);
-  //   dev.log('Server listening on port ${server.port}...', name: 'network');
-  //   _connectRequestStub?.connectToBoat(ConnectRequest()).then((response) {
-  //     dev.log("Boat accepted connection");
-  //   });
-  // }
 
   Future<void> _createClient() async {
     dev.log("about to create channel", name: 'network');
@@ -67,7 +54,6 @@ class NetworkComms {
     dev.log("created channel", name: 'network');
     _controlCommandStub = ExecuteControlCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
-    //_connectRequestStub = ConnectToBoatServiceClient(channel);
   }
 
   _sendControlCommand(double value, ControlType type) {
@@ -79,8 +65,6 @@ class NetworkComms {
       dev.log("Control command returned with response: $status",
           name: 'network');
     });
-    // var bytes = command.writeToBuffer();
-    // _socket?.write(bytes);
   }
 
   updateRudderAngle(double angle) {
