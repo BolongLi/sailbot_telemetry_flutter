@@ -17,13 +17,15 @@ class CircleDragWidget extends StatefulWidget {
   });
 
   @override
-  _CircleDragWidgetState createState() => _CircleDragWidgetState();
+  _CircleDragWidgetState createState() =>
+      _CircleDragWidgetState(lineLength, width);
 }
 
 class _CircleDragWidgetState extends State<CircleDragWidget> {
   Offset position;
 
-  _CircleDragWidgetState() : position = Offset(100, 100);
+  _CircleDragWidgetState(var lineLength, var width)
+      : position = Offset(width / 2, lineLength);
 
   @override
   Widget build(BuildContext context) {
