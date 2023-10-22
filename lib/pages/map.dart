@@ -67,7 +67,12 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
+    _initComms();
+  }
+
+  void _initComms() async {
     networkComms = NetworkComms(receiveBoatState);
+    dev.log("Created comms object", name: "network");
   }
 
   _updateRudderAngle(double angle) {
@@ -213,20 +218,20 @@ class _MapPageState extends State<MapPage> {
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
                     ),
-                    MarkerLayer(markers: [
-                      Marker(
-                          point: _boatLatLng,
-                          height: 60,
-                          width: 60,
-                          child: Transform.rotate(
-                              angle: _heading * pi / 180,
-                              child: Image.file(File("assets/arrow.png")))),
-                      Marker(
-                          point: _boatLatLng,
-                          height: 30,
-                          width: 30,
-                          child: Image.file(File("assets/boat.png")))
-                    ])
+                    // MarkerLayer(markers: [
+                    //   Marker(
+                    //       point: _boatLatLng,
+                    //       height: 60,
+                    //       width: 60,
+                    //       child: Transform.rotate(
+                    //           angle: _heading * pi / 180,
+                    //           child: Image.file(File("assets/arrow.png")))),
+                    //   Marker(
+                    //       point: _boatLatLng,
+                    //       height: 30,
+                    //       width: 30,
+                    //       child: Image.file(File("assets/boat.png")))
+                    // ])
                   ],
                 ),
               ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:grpc/grpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
@@ -5,32 +6,32 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/con
 import 'dart:developer' as dev; //log() conflicts with math
 
 //client for ControlCommand, server for BoatState. Could separate.
-class NetworkComms extends ReceiveBoatStateServiceBase {
+class NetworkComms {
   ExecuteControlCommandServiceClient? _controlCommandStub;
-  ConnectToBoatServiceClient? _connectRequestStub;
+  SendBoatStateServiceClient? _sendBoatStateStub;
+  //ConnectToBoatServiceClient? _connectRequestStub;
   Function _boatStateCallback;
 
   NetworkComms(this._boatStateCallback) {
-    final server = Server.create(services: [this]);
-    _awaitServer(server);
-    dev.log('Server listening on port ${server.port}...', name: 'network');
     _createClient();
     dev.log('created client to boat');
-    _connectRequestStub?.connectToBoat(ConnectRequest()).then((response) {
-      dev.log("Boat accepted connection");
+    Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {
+        _boatStateCallback(boatState);
+      });
     });
   }
 
-  @override
-  Future<Empty> receiveBoatState(ServiceCall call, BoatState state) async {
-    _boatStateCallback(state);
-    return Empty();
-  }
-
-  //constructor bodies cannot be async
-  Future<void> _awaitServer(server) async {
-    await server.serve(port: 50051);
-  }
+  // //constructor bodies cannot be async
+  // Future<void> init() async {
+  //   final server = Server.create(services: [this]);
+  //   dev.log("Created server", name: "network");
+  //   await server.serve(port: 50052);
+  //   dev.log('Server listening on port ${server.port}...', name: 'network');
+  //   _connectRequestStub?.connectToBoat(ConnectRequest()).then((response) {
+  //     dev.log("Boat accepted connection");
+  //   });
+  // }
 
   Future<void> _createClient() async {
     dev.log("about to create channel", name: 'network');
@@ -38,12 +39,35 @@ class NetworkComms extends ReceiveBoatStateServiceBase {
       'sailbot-orangepi.netbird.cloud',
       port: 50051,
       options: const ChannelOptions(
-        credentials: ChannelCredentials.insecure(),
-      ),
+          credentials: ChannelCredentials.insecure(),
+          keepAlive: ClientKeepAliveOptions(
+              pingInterval: Duration(seconds: 1),
+              timeout: Duration(seconds: 2))),
     );
+    channel.onConnectionStateChanged.listen((connectionState) {
+      switch (connectionState) {
+        case ConnectionState.idle:
+          dev.log("Connection is idle.", name: 'network');
+          break;
+        case ConnectionState.connecting:
+          dev.log("Connecting to server...", name: 'network');
+          break;
+        case ConnectionState.ready:
+          dev.log("Connected to server.", name: 'network');
+          break;
+        case ConnectionState.transientFailure:
+          dev.log("Connection lost. Attempting to reconnect...",
+              name: 'network');
+          break;
+        case ConnectionState.shutdown:
+          dev.log("Connection is shutting down or shut down.", name: 'network');
+          break;
+      }
+    });
     dev.log("created channel", name: 'network');
     _controlCommandStub = ExecuteControlCommandServiceClient(channel);
-    _connectRequestStub = ConnectToBoatServiceClient(channel);
+    _sendBoatStateStub = SendBoatStateServiceClient(channel);
+    //_connectRequestStub = ConnectToBoatServiceClient(channel);
   }
 
   _sendControlCommand(double value, ControlType type) {
