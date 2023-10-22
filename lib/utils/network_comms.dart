@@ -36,7 +36,7 @@ class NetworkComms {
   Future<void> _createClient() async {
     dev.log("about to create channel", name: 'network');
     final channel = ClientChannel(
-      'sailbot-orangepi.netbird.cloud',
+      '172.29.81.241',
       port: 50051,
       options: const ChannelOptions(
           credentials: ChannelCredentials.insecure(),
