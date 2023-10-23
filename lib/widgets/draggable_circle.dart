@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'dart:developer' as dev;
 
 class CircleDragWidget extends StatefulWidget {
   final double width;
   final double height;
   final double lineLength;
   final double radius;
+  double angle = 0;
   Function callback;
+  final GlobalKey<CircleDragWidgetState> key;
 
   CircleDragWidget({
     required this.width,
@@ -14,17 +17,22 @@ class CircleDragWidget extends StatefulWidget {
     required this.lineLength,
     required this.radius,
     required this.callback,
-  });
+    required this.key,
+  }) : super(key: key);
 
   @override
-  _CircleDragWidgetState createState() =>
-      _CircleDragWidgetState(lineLength, width);
+  CircleDragWidgetState createState() =>
+      CircleDragWidgetState(lineLength, width);
+
+  void incrementAngle(amount) {
+    key.currentState?._incrementAngle(amount);
+  }
 }
 
-class _CircleDragWidgetState extends State<CircleDragWidget> {
+class CircleDragWidgetState extends State<CircleDragWidget> {
   Offset position;
 
-  _CircleDragWidgetState(var lineLength, var width)
+  CircleDragWidgetState(var lineLength, var width)
       : position = Offset(width / 2, lineLength);
 
   @override
@@ -50,9 +58,23 @@ class _CircleDragWidgetState extends State<CircleDragWidget> {
     );
   }
 
+  void _incrementAngle(double amount) {
+    if ((widget.angle + amount).abs() > pi / 2) {
+      return;
+    }
+    widget.angle += amount;
+    widget.callback(widget.angle);
+    double circleX = widget.width / 2 + widget.lineLength * sin(widget.angle);
+    double circleY = widget.lineLength * cos(widget.angle);
+    setState(() {
+      position = Offset(circleX, circleY);
+    });
+  }
+
   void _updateCirclePosition(double dx) {
     if (dx < 0 || dx > widget.width) return;
     double angle = (dx - (widget.width / 2)) / (widget.width / 2) * (pi / 2);
+    widget.angle = angle;
     widget.callback(angle);
     double circleX = widget.width / 2 + widget.lineLength * sin(angle);
     double circleY = widget.lineLength * cos(angle);

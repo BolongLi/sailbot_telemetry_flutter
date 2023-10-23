@@ -7,6 +7,7 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:math';
 import 'dart:developer' as dev; //log() conflicts with math
 import 'dart:async';
+import 'package:gamepads/gamepads.dart';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
@@ -36,6 +37,8 @@ class _MapPageState extends State<MapPage> {
   Color _menuIconColor = const Color.fromARGB(255, 0, 0, 0);
   var _nodeStates = <NodeInfo>[];
   var _polylines = <Polyline>[];
+  StreamSubscription<GamepadEvent>? _gamepadListener;
+  DateTime _lastTime = DateTime.now();
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -65,10 +68,65 @@ class _MapPageState extends State<MapPage> {
     ),
   ];
 
+  CircleDragWidget? _trimTabControlWidget;
+  final trimTabKey = GlobalKey<CircleDragWidgetState>();
+  double _trimTabStickValue = 0;
+  CircleDragWidget? _rudderControlWidget;
+  final rudderKey = GlobalKey<CircleDragWidgetState>();
+  double _rudderStickValue = 0;
   @override
   void initState() {
     super.initState();
+
+    //control widgets
+    _trimTabControlWidget = CircleDragWidget(
+      width: 100,
+      height: 50,
+      lineLength: 40,
+      radius: 5,
+      callback: _updateTrimtabAngle,
+      key: trimTabKey,
+    );
+    _rudderControlWidget = CircleDragWidget(
+      width: 100,
+      height: 50,
+      lineLength: 40,
+      radius: 5,
+      callback: _updateRudderAngle,
+      key: rudderKey,
+    );
+
+    //gRPC client
     _initComms();
+
+    //gamepad events
+    _gamepadListener = Gamepads.events.listen((event) {
+      switch (event.key) {
+        case "dwXpos":
+          if (!((event.value - 32768).abs() > 10000)) {
+            _rudderStickValue = 0;
+            return;
+          }
+          _rudderStickValue = event.value - 32768;
+        case "dwUpos":
+          if (!((event.value - 32768).abs() > 10000)) {
+            _trimTabStickValue = 0;
+            return;
+          }
+          _trimTabStickValue = event.value - 32768;
+      }
+    });
+
+    //update controls at 30hz
+    Timer.periodic(const Duration(milliseconds: 33), (timer) {
+      _updateControlAngles();
+    });
+  }
+
+  @override
+  void dispose() {
+    _gamepadListener?.cancel();
+    super.dispose();
   }
 
   void _initComms() async {
@@ -84,6 +142,34 @@ class _MapPageState extends State<MapPage> {
     networkComms?.updateTrimtabAngle(angle);
   }
 
+  void _updateControlAngles() {
+    DateTime currentTime = DateTime.now();
+    double rudderScalar = (_rudderStickValue) / 32768;
+    double rudderAngleChange = (currentTime.millisecondsSinceEpoch -
+            _lastTime.millisecondsSinceEpoch) /
+        1000 *
+        rudderScalar;
+    bool refresh = false;
+    if (rudderAngleChange != 0) {
+      refresh = true;
+      _rudderControlWidget?.incrementAngle(rudderAngleChange);
+    }
+
+    double ttScalar = (_trimTabStickValue) / 32768;
+    double ttAngleChange = (currentTime.millisecondsSinceEpoch -
+            _lastTime.millisecondsSinceEpoch) /
+        1000 *
+        ttScalar;
+    if (ttAngleChange != 0) {
+      refresh = true;
+      _trimTabControlWidget?.incrementAngle(ttAngleChange);
+    }
+    _lastTime = currentTime;
+    if (refresh) {
+      setState(() {});
+    }
+  }
+
   receiveBoatState(BoatState boatState) {
     setState(() {
       _heading = boatState.currentHeading;
@@ -95,12 +181,12 @@ class _MapPageState extends State<MapPage> {
 
       //path lines
       _polylines.clear();
-      var boat_points = boatState.currentPath.points;
+      var boatPoints = boatState.currentPath.points;
       var points = <LatLng>[];
-      if (boat_points.isNotEmpty) {
+      if (boatPoints.isNotEmpty) {
         points.add(_boatLatLng);
       }
-      for (var point in boat_points) {
+      for (var point in boatPoints) {
         points.add(LatLng(point.latitude, point.longitude));
       }
       _polylines.add(Polyline(
@@ -243,12 +329,7 @@ class _MapPageState extends State<MapPage> {
                 alignment: Alignment.bottomCenter,
                 // centerPoint:
                 //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-                child: CircleDragWidget(
-                    width: 100,
-                    height: 50,
-                    lineLength: 40,
-                    radius: 5,
-                    callback: _updateRudderAngle),
+                child: _rudderControlWidget,
               ),
             ),
             Transform.translate(
@@ -257,12 +338,7 @@ class _MapPageState extends State<MapPage> {
                 alignment: Alignment.bottomRight,
                 // centerPoint:
                 //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-                child: CircleDragWidget(
-                    width: 100,
-                    height: 50,
-                    lineLength: 40,
-                    radius: 5,
-                    callback: _updateTrimtabAngle),
+                child: _trimTabControlWidget,
               ),
             ),
           ],
