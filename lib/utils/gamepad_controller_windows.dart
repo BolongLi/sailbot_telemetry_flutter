@@ -9,7 +9,6 @@ class GamepadControllerWindows {
     _gamepad = Gamepad(0);
     //update controls at 30hz
     Timer.periodic(const Duration(milliseconds: 33), (timer) {
-      dev.log("in timer");
       _gamepad?.updateState();
       _updateControlAngles(
           _gamepad?.state.leftThumbstickX, _gamepad?.state.rightThumbstickX);
