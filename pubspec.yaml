@@ -45,6 +45,7 @@ dependencies:
   grpc: ^3.2.4
   gamepads:
     path: ../gamepads/packages/gamepads
+  win32_gamepad: ^1.0.7
 
 dev_dependencies:
   flutter_test:

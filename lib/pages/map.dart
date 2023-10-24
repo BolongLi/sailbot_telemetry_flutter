@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
+import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_windows.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:syncfusion_flutter_gauges/gauges.dart';
@@ -115,8 +116,11 @@ class _MapPageState extends State<MapPage> {
     //dev.log("Created comms object", name: "network");("172.29.81.241");
 
     //controller
-    // if (io.Platform.isLinux) {}
-    GamepadController(_updateControlAngles);
+    if (io.Platform.isLinux) {
+      GamepadControllerLinux(_updateControlAngles);
+    } else if (io.Platform.isWindows) {
+      GamepadControllerWindows(_updateControlAngles);
+    }
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
       _connectionIconColorCallback();
@@ -141,7 +145,13 @@ class _MapPageState extends State<MapPage> {
     networkComms?.updateTrimtabAngle(angle);
   }
 
-  void _updateControlAngles(rudderStickValue, trimTabStickValue) {
+  void _updateControlAngles(int rudderStickValue, int trimTabStickValue) {
+    if (rudderStickValue.abs() < 10000) {
+      rudderStickValue = 0;
+    }
+    if (trimTabStickValue.abs() < 10000) {
+      trimTabStickValue = 0;
+    }
     DateTime currentTime = DateTime.now();
     double rudderScalar = (rudderStickValue) / 32768;
     double rudderAngleChange = (currentTime.millisecondsSinceEpoch -
