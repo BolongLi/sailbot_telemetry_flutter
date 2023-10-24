@@ -10,31 +10,33 @@ class NetworkComms {
   ExecuteControlCommandServiceClient? _controlCommandStub;
   SendBoatStateServiceClient? _sendBoatStateStub;
   Function _boatStateCallback;
+  Timer? _timer;
 
   NetworkComms(this._boatStateCallback, this._server) {
     _createClient();
     dev.log('created client to boat');
-    Timer.periodic(const Duration(seconds: 1), (Timer t) {
-      _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {
-        _boatStateCallback(boatState);
-      });
-    });
+  }
+
+  void reconnect(String server) {
+    _server = server;
+    _createClient();
   }
 
   Future<void> _createClient() async {
+    _timer?.cancel();
     dev.log("about to create channel", name: 'network');
     if (_server == null) {
       dev.log("Something went wrong, server address is null", name: 'network');
       return;
     }
-    final channel = ClientChannel(
+    var channel = ClientChannel(
       _server ?? "?",
       port: 50051,
       options: const ChannelOptions(
-          credentials: ChannelCredentials.insecure(),
-          keepAlive: ClientKeepAliveOptions(
-              pingInterval: Duration(seconds: 1),
-              timeout: Duration(seconds: 2))),
+        credentials: ChannelCredentials.insecure(),
+        keepAlive: ClientKeepAliveOptions(
+            pingInterval: Duration(seconds: 1), timeout: Duration(seconds: 2)),
+      ),
     );
     channel.onConnectionStateChanged.listen((connectionState) {
       switch (connectionState) {
@@ -59,6 +61,11 @@ class NetworkComms {
     dev.log("created channel", name: 'network');
     _controlCommandStub = ExecuteControlCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
+    _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {
+        _boatStateCallback(boatState);
+      });
+    });
   }
 
   _sendControlCommand(double value, ControlType type) {

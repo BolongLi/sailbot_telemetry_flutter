@@ -9,7 +9,7 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:math';
 import 'dart:developer' as dev; //log() conflicts with math
 import 'dart:async';
-import 'package:gamepads/gamepads.dart';
+//import 'package:gamepads/gamepads.dart';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
@@ -37,9 +37,12 @@ class _MapPageState extends State<MapPage> {
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
   Color _menuIconColor = const Color.fromARGB(255, 0, 0, 0);
+  final Color _connectionColorOK = const Color.fromARGB(255, 0, 255, 0);
+  Color _connectionIconColor = const Color.fromARGB(255, 0, 0, 0);
+  int _lastConnectionTime = DateTime.now().millisecondsSinceEpoch - 3000;
   var _nodeStates = <NodeInfo>[];
   var _polylines = <Polyline>[];
-  StreamSubscription<GamepadEvent>? _gamepadListener;
+  //StreamSubscription<GamepadEvent>? _gamepadListener;
   DateTime _lastTime = DateTime.now();
 
   NetworkComms? networkComms;
@@ -111,41 +114,44 @@ class _MapPageState extends State<MapPage> {
       //update servers list
     });
     //gRPC client
-    _initComms("172.29.81.241");
+    networkComms = NetworkComms(receiveBoatState, "172.29.81.241");
+    //dev.log("Created comms object", name: "network");("172.29.81.241");
 
     //gamepad events
-    _gamepadListener = Gamepads.events.listen((event) {
-      switch (event.key) {
-        case "dwXpos":
-          if (!((event.value - 32768).abs() > 10000)) {
-            _rudderStickValue = 0;
-            return;
-          }
-          _rudderStickValue = event.value - 32768;
-        case "dwUpos":
-          if (!((event.value - 32768).abs() > 10000)) {
-            _trimTabStickValue = 0;
-            return;
-          }
-          _trimTabStickValue = event.value - 32768;
-      }
-    });
+    // _gamepadListener = Gamepads.events.listen((event) {
+    //   switch (event.key) {
+    //     case "dwXpos":
+    //       if (!((event.value - 32768).abs() > 10000)) {
+    //         _rudderStickValue = 0;
+    //         return;
+    //       }
+    //       _rudderStickValue = event.value - 32768;
+    //     case "dwUpos":
+    //       if (!((event.value - 32768).abs() > 10000)) {
+    //         _trimTabStickValue = 0;
+    //         return;
+    //       }
+    //       _trimTabStickValue = event.value - 32768;
+    //   }
+    // });
 
     //update controls at 30hz
     Timer.periodic(const Duration(milliseconds: 33), (timer) {
       _updateControlAngles();
     });
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      _connectionIconColorCallback();
+    });
   }
 
   @override
   void dispose() {
-    _gamepadListener?.cancel();
+    //_gamepadListener?.cancel();
     super.dispose();
   }
 
-  void _initComms(String? server) async {
-    networkComms = NetworkComms(receiveBoatState, server);
-    dev.log("Created comms object", name: "network");
+  void _resetComms(String server) async {
+    networkComms?.reconnect(server);
   }
 
   _updateRudderAngle(double angle) {
@@ -184,8 +190,21 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
+  void _connectionIconColorCallback() {
+    setState(() {
+      DateTime currentTime = DateTime.now();
+      if (currentTime.millisecondsSinceEpoch - _lastConnectionTime > 3000) {
+        _connectionIconColor = _colorError;
+      } else {
+        _connectionIconColor = _connectionColorOK;
+      }
+    });
+  }
+
   receiveBoatState(BoatState boatState) {
     setState(() {
+      DateTime currentTime = DateTime.now();
+      _lastConnectionTime = currentTime.millisecondsSinceEpoch;
       _heading = boatState.currentHeading;
       _speed = boatState.speedKnots;
       _trueWind = boatState.trueWind.direction;
@@ -257,7 +276,7 @@ class _MapPageState extends State<MapPage> {
                     setState(() {
                       _selectedValue = newValue;
                     });
-                    _initComms(newValue);
+                    _resetComms(newValue);
                   },
                 ),
               ]),
@@ -366,7 +385,7 @@ class _MapPageState extends State<MapPage> {
             alignment: Alignment.topRight,
             child: IconButton(
               icon: const Icon(Icons.wifi),
-              color: const Color.fromARGB(255, 128, 128, 128),
+              color: _connectionIconColor,
               onPressed: () {
                 _scaffoldState.currentState?.openEndDrawer();
               },
