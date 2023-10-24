@@ -9,7 +9,7 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:math';
 import 'dart:developer' as dev; //log() conflicts with math
 import 'dart:async';
-//import 'package:gamepads/gamepads.dart';
+import 'package:gamepads/gamepads.dart';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'dart:io';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
@@ -42,7 +42,7 @@ class _MapPageState extends State<MapPage> {
   int _lastConnectionTime = DateTime.now().millisecondsSinceEpoch - 3000;
   var _nodeStates = <NodeInfo>[];
   var _polylines = <Polyline>[];
-  //StreamSubscription<GamepadEvent>? _gamepadListener;
+  StreamSubscription<GamepadEvent>? _gamepadListener;
   DateTime _lastTime = DateTime.now();
 
   NetworkComms? networkComms;
@@ -118,22 +118,35 @@ class _MapPageState extends State<MapPage> {
     //dev.log("Created comms object", name: "network");("172.29.81.241");
 
     //gamepad events
-    // _gamepadListener = Gamepads.events.listen((event) {
-    //   switch (event.key) {
-    //     case "dwXpos":
-    //       if (!((event.value - 32768).abs() > 10000)) {
-    //         _rudderStickValue = 0;
-    //         return;
-    //       }
-    //       _rudderStickValue = event.value - 32768;
-    //     case "dwUpos":
-    //       if (!((event.value - 32768).abs() > 10000)) {
-    //         _trimTabStickValue = 0;
-    //         return;
-    //       }
-    //       _trimTabStickValue = event.value - 32768;
-    //   }
-    // });
+    _gamepadListener = Gamepads.events.listen((event) {
+      dev.log(event.key);
+      switch (event.key) {
+        case "dwXpos": //left stick windows
+          if (!((event.value - 32768).abs() > 10000)) {
+            _rudderStickValue = 0;
+            return;
+          }
+          _rudderStickValue = event.value - 32768;
+        case "dwUpos": //right stick windows
+          if (!((event.value - 32768).abs() > 10000)) {
+            _trimTabStickValue = 0;
+            return;
+          }
+          _trimTabStickValue = event.value - 32768;
+        case "0": //left stick linux
+          if (!((event.value).abs() > 10000)) {
+            _rudderStickValue = 0;
+            return;
+          }
+          _rudderStickValue = event.value;
+        case "3": //right stick linux
+          if (!((event.value).abs() > 10000)) {
+            _trimTabStickValue = 0;
+            return;
+          }
+          _trimTabStickValue = event.value;
+      }
+    });
 
     //update controls at 30hz
     Timer.periodic(const Duration(milliseconds: 33), (timer) {
