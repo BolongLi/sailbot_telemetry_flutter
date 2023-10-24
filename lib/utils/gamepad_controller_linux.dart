@@ -9,7 +9,7 @@ class GamepadControllerLinux {
   Function _updateControlAngles;
   GamepadControllerLinux(this._updateControlAngles) {
     _gamepadListener = Gamepads.events.listen((event) {
-      dev.log(event.key);
+      //dev.log(event.key);
       switch (event.key) {
         case "0": //left stick linux
           // if (!((event.value).abs() > 10000)) {
@@ -17,7 +17,7 @@ class GamepadControllerLinux {
           //   return;
           // }
           _rudderStickValue = event.value;
-        case "3": //right stick linux
+        case "2": //right stick linux
           // if (!((event.value).abs() > 10000)) {
           //   _trimTabStickValue = 0;
           //   return;
@@ -27,7 +27,8 @@ class GamepadControllerLinux {
     });
     //update controls at 30hz
     Timer.periodic(const Duration(milliseconds: 33), (timer) {
-      _updateControlAngles(_rudderStickValue, _trimTabStickValue);
+      _updateControlAngles(
+          _rudderStickValue.toInt(), _trimTabStickValue.toInt());
     });
   }
   double getRudderStickValue() {
