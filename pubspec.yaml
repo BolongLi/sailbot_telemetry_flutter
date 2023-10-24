@@ -43,7 +43,8 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   web_socket_channel: ^2.4.0
   grpc: ^3.2.4
-  gamepads: ^0.1.1
+  gamepads:
+    path: ../gamepads/packages/gamepads
 
 dev_dependencies:
   flutter_test:

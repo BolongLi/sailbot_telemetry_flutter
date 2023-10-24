@@ -9,12 +9,12 @@ import 'package:syncfusion_flutter_gauges/gauges.dart';
 import 'dart:math';
 import 'dart:developer' as dev; //log() conflicts with math
 import 'dart:async';
-import 'package:gamepads/gamepads.dart';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
+import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_linux.dart';
 
 GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
@@ -42,7 +42,6 @@ class _MapPageState extends State<MapPage> {
   int _lastConnectionTime = DateTime.now().millisecondsSinceEpoch - 3000;
   var _nodeStates = <NodeInfo>[];
   var _polylines = <Polyline>[];
-  StreamSubscription<GamepadEvent>? _gamepadListener;
   DateTime _lastTime = DateTime.now();
 
   NetworkComms? networkComms;
@@ -75,10 +74,8 @@ class _MapPageState extends State<MapPage> {
 
   CircleDragWidget? _trimTabControlWidget;
   final trimTabKey = GlobalKey<CircleDragWidgetState>();
-  double _trimTabStickValue = 0;
   CircleDragWidget? _rudderControlWidget;
   final rudderKey = GlobalKey<CircleDragWidgetState>();
-  double _rudderStickValue = 0;
 
   Map<String, DropdownMenuEntry<String>> _servers = HashMap();
   String? _selectedValue;
@@ -117,41 +114,10 @@ class _MapPageState extends State<MapPage> {
     networkComms = NetworkComms(receiveBoatState, "172.29.81.241");
     //dev.log("Created comms object", name: "network");("172.29.81.241");
 
-    //gamepad events
-    _gamepadListener = Gamepads.events.listen((event) {
-      dev.log(event.key);
-      switch (event.key) {
-        case "dwXpos": //left stick windows
-          if (!((event.value - 32768).abs() > 10000)) {
-            _rudderStickValue = 0;
-            return;
-          }
-          _rudderStickValue = event.value - 32768;
-        case "dwUpos": //right stick windows
-          if (!((event.value - 32768).abs() > 10000)) {
-            _trimTabStickValue = 0;
-            return;
-          }
-          _trimTabStickValue = event.value - 32768;
-        case "0": //left stick linux
-          if (!((event.value).abs() > 10000)) {
-            _rudderStickValue = 0;
-            return;
-          }
-          _rudderStickValue = event.value;
-        case "3": //right stick linux
-          if (!((event.value).abs() > 10000)) {
-            _trimTabStickValue = 0;
-            return;
-          }
-          _trimTabStickValue = event.value;
-      }
-    });
+    //controller
+    // if (io.Platform.isLinux) {}
+    GamepadController(_updateControlAngles);
 
-    //update controls at 30hz
-    Timer.periodic(const Duration(milliseconds: 33), (timer) {
-      _updateControlAngles();
-    });
     Timer.periodic(const Duration(seconds: 1), (timer) {
       _connectionIconColorCallback();
     });
@@ -175,9 +141,9 @@ class _MapPageState extends State<MapPage> {
     networkComms?.updateTrimtabAngle(angle);
   }
 
-  void _updateControlAngles() {
+  void _updateControlAngles(rudderStickValue, trimTabStickValue) {
     DateTime currentTime = DateTime.now();
-    double rudderScalar = (_rudderStickValue) / 32768;
+    double rudderScalar = (rudderStickValue) / 32768;
     double rudderAngleChange = (currentTime.millisecondsSinceEpoch -
             _lastTime.millisecondsSinceEpoch) /
         1000 *
@@ -188,7 +154,7 @@ class _MapPageState extends State<MapPage> {
       _rudderControlWidget?.incrementAngle(rudderAngleChange);
     }
 
-    double ttScalar = (_trimTabStickValue) / 32768;
+    double ttScalar = (trimTabStickValue) / 32768;
     double ttAngleChange = (currentTime.millisecondsSinceEpoch -
             _lastTime.millisecondsSinceEpoch) /
         1000 *
