@@ -6,11 +6,12 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/con
 import 'dart:developer' as dev; //log() conflicts with math
 
 class NetworkComms {
+  String? _server;
   ExecuteControlCommandServiceClient? _controlCommandStub;
   SendBoatStateServiceClient? _sendBoatStateStub;
   Function _boatStateCallback;
 
-  NetworkComms(this._boatStateCallback) {
+  NetworkComms(this._boatStateCallback, this._server) {
     _createClient();
     dev.log('created client to boat');
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
@@ -22,8 +23,12 @@ class NetworkComms {
 
   Future<void> _createClient() async {
     dev.log("about to create channel", name: 'network');
+    if (_server == null) {
+      dev.log("Something went wrong, server address is null", name: 'network');
+      return;
+    }
     final channel = ClientChannel(
-      '172.29.81.241',
+      _server ?? "?",
       port: 50051,
       options: const ChannelOptions(
           credentials: ChannelCredentials.insecure(),

@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
@@ -74,6 +76,10 @@ class _MapPageState extends State<MapPage> {
   CircleDragWidget? _rudderControlWidget;
   final rudderKey = GlobalKey<CircleDragWidgetState>();
   double _rudderStickValue = 0;
+
+  Map<String, DropdownMenuEntry<String>> _servers = HashMap();
+  String? _selectedValue;
+
   @override
   void initState() {
     super.initState();
@@ -96,8 +102,16 @@ class _MapPageState extends State<MapPage> {
       key: rudderKey,
     );
 
+    _servers["172.29.201.10"] =
+        DropdownMenuEntry(value: "172.29.201.10", label: "sailbot-nano");
+    _servers["172.29.81.241"] =
+        DropdownMenuEntry(value: "172.29.81.241", label: "sailbot-orangepi");
+    _selectedValue = _servers.values.first.value;
+    setState(() {
+      //update servers list
+    });
     //gRPC client
-    _initComms();
+    _initComms("172.29.81.241");
 
     //gamepad events
     _gamepadListener = Gamepads.events.listen((event) {
@@ -129,8 +143,8 @@ class _MapPageState extends State<MapPage> {
     super.dispose();
   }
 
-  void _initComms() async {
-    networkComms = NetworkComms(receiveBoatState);
+  void _initComms(String? server) async {
+    networkComms = NetworkComms(receiveBoatState, server);
     dev.log("Created comms object", name: "network");
   }
 
@@ -223,126 +237,160 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: buildDrawer(context, MapPage.route, _nodeStates),
-      key: _scaffoldState,
-      body: Padding(
-        padding: const EdgeInsets.all(0),
-        child: Stack(
+      endDrawer: Drawer(
+        child: ListView(
           children: [
-            Flex(direction: Axis.horizontal, children: <Widget>[
-              Flexible(
-                child: FlutterMap(
-                  options: MapOptions(
-                      initialCenter: const LatLng(51.5, -0.09),
-                      initialZoom: 5,
-                      interactionOptions: InteractionOptions(
-                          flags: InteractiveFlag.all - InteractiveFlag.rotate,
-                          cursorKeyboardRotationOptions:
-                              CursorKeyboardRotationOptions(
-                            isKeyTrigger: (key) => false,
-                          ))),
-                  children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
-                    ),
-                    MarkerLayer(markers: [
-                      Marker(
-                          point: _boatLatLng,
-                          height: 60,
-                          width: 60,
-                          child: Transform.rotate(
-                              angle: _heading * pi / 180,
-                              child: Image.asset("assets/arrow.png"))),
-                      Marker(
-                          point: _boatLatLng,
-                          height: 30,
-                          width: 30,
-                          child: Image.asset("assets/boat.png"))
-                    ]),
-                    PolylineLayer(polylines: _polylines),
-                  ],
+            DrawerHeader(
+              child: Text('Drawer Header'),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+            ),
+            ListTile(
+              title: Row(children: <Widget>[
+                DropdownMenu<String>(
+                  dropdownMenuEntries: _servers.values.toList(),
+                  initialSelection: _selectedValue,
+                  requestFocusOnTap: false,
+                  onSelected: (dynamic newValue) {
+                    dev.log("connecting to: $newValue", name: 'network');
+                    setState(() {
+                      _selectedValue = newValue;
+                    });
+                    _initComms(newValue);
+                  },
                 ),
-              ),
-            ]),
-            AlignPositioned(
-              alignment: Alignment.bottomCenter,
-              centerPoint: Offset(displayWidth(context) / 1.5, 0),
-              //width: min(displayWidth(context) / 3, 200),
-              child: Row(
-                children: <Widget>[
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                          width: min(displayWidth(context) / 3, 150),
-                          height: min(displayWidth(context) / 3, 150),
-                          child: _buildCompassGauge(
-                              _heading, _compassAnnotations)),
-                      const Text("heading"),
-                    ],
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                          width: min(displayWidth(context) / 3, 150),
-                          height: min(displayWidth(context) / 3, 150),
-                          child: _buildSpeedGauge()),
-                      const Text("Speed"),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            AlignPositioned(
-              alignment: Alignment.centerRight,
-              centerPoint: Offset(0, displayHeight(context) / 2),
-              //width: min(displayWidth(context) / 3, 200),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text("True wind"),
-                  SizedBox(
-                      width: min(displayHeight(context) / 3, 150),
-                      height: min(displayHeight(context) / 3, 150),
-                      child:
-                          _buildCompassGauge(_trueWind, _compassAnnotations)),
-                  const Text("Apparent wind"),
-                  SizedBox(
-                      width: min(displayHeight(context) / 3, 150),
-                      height: min(displayHeight(context) / 3, 150),
-                      child: _buildCompassGauge(_apparentWind, null)),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.menu),
-              color: _menuIconColor,
-              onPressed: () {
-                _scaffoldState.currentState?.openDrawer();
-              },
-            ),
-            Transform.translate(
-              offset: const Offset(-40, -40),
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                // centerPoint:
-                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-                child: _rudderControlWidget,
-              ),
-            ),
-            Transform.translate(
-              offset: const Offset(-40, -40),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                // centerPoint:
-                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-                child: _trimTabControlWidget,
-              ),
+              ]),
             ),
           ],
         ),
+      ),
+      key: _scaffoldState,
+      body: Stack(
+        children: [
+          Flex(direction: Axis.horizontal, children: <Widget>[
+            Flexible(
+              child: FlutterMap(
+                options: MapOptions(
+                    initialCenter: const LatLng(51.5, -0.09),
+                    initialZoom: 5,
+                    interactionOptions: InteractionOptions(
+                        flags: InteractiveFlag.all - InteractiveFlag.rotate,
+                        cursorKeyboardRotationOptions:
+                            CursorKeyboardRotationOptions(
+                          isKeyTrigger: (key) => false,
+                        ))),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
+                  ),
+                  MarkerLayer(markers: [
+                    Marker(
+                        point: _boatLatLng,
+                        height: 60,
+                        width: 60,
+                        child: Transform.rotate(
+                            angle: _heading * pi / 180,
+                            child: Image.asset("assets/arrow.png"))),
+                    Marker(
+                        point: _boatLatLng,
+                        height: 30,
+                        width: 30,
+                        child: Image.asset("assets/boat.png"))
+                  ]),
+                  PolylineLayer(polylines: _polylines),
+                ],
+              ),
+            ),
+          ]),
+          AlignPositioned(
+            alignment: Alignment.bottomCenter,
+            centerPoint: Offset(displayWidth(context) / 1.5, 0),
+            //width: min(displayWidth(context) / 3, 200),
+            child: Row(
+              children: <Widget>[
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SizedBox(
+                        width: min(displayWidth(context) / 3, 150),
+                        height: min(displayWidth(context) / 3, 150),
+                        child:
+                            _buildCompassGauge(_heading, _compassAnnotations)),
+                    const Text("heading"),
+                  ],
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SizedBox(
+                        width: min(displayWidth(context) / 3, 150),
+                        height: min(displayWidth(context) / 3, 150),
+                        child: _buildSpeedGauge()),
+                    const Text("Speed"),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          AlignPositioned(
+            alignment: Alignment.centerRight,
+            centerPoint: Offset(0, displayHeight(context) / 2),
+            //width: min(displayWidth(context) / 3, 200),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Text("True wind"),
+                SizedBox(
+                    width: min(displayHeight(context) / 3, 150),
+                    height: min(displayHeight(context) / 3, 150),
+                    child: _buildCompassGauge(_trueWind, _compassAnnotations)),
+                const Text("Apparent wind"),
+                SizedBox(
+                    width: min(displayHeight(context) / 3, 150),
+                    height: min(displayHeight(context) / 3, 150),
+                    child: _buildCompassGauge(_apparentWind, null)),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu),
+            color: _menuIconColor,
+            onPressed: () {
+              _scaffoldState.currentState?.openDrawer();
+            },
+          ),
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              icon: const Icon(Icons.wifi),
+              color: const Color.fromARGB(255, 128, 128, 128),
+              onPressed: () {
+                _scaffoldState.currentState?.openEndDrawer();
+              },
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(-40, -40),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              // centerPoint:
+              //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+              child: _rudderControlWidget,
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(-40, -40),
+            child: Align(
+              alignment: Alignment.bottomRight,
+              // centerPoint:
+              //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+              child: _trimTabControlWidget,
+            ),
+          ),
+        ],
       ),
     );
   }
