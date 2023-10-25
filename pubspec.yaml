@@ -46,6 +46,7 @@ dependencies:
   gamepads:
     path: ../gamepads/packages/gamepads
   win32_gamepad: ^1.0.7
+  github: ^9.19.0
 
 dev_dependencies:
   flutter_test:

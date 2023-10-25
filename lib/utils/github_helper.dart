@@ -1,0 +1,40 @@
+import 'dart:convert';
+import 'package:github/github.dart';
+import 'package:http/http.dart' as http;
+import 'dart:developer' as dev;
+
+class Server {
+  String name = "";
+  String address = "";
+  Server({required this.name, required this.address});
+  factory Server.fromJson(Map<String, dynamic> json) {
+    return Server(name: json['name'], address: json['address']);
+  }
+}
+
+Future<RepositoryContents> listFilesInRepo(
+    GitHub github, String owner, String repo,
+    [String? path]) async {
+  RepositorySlug slug = RepositorySlug(owner, repo);
+  return await github.repositories.getContents(slug, path ?? '');
+}
+
+Future<Map<String, dynamic>?> fetchJsonFromRepo(
+    GitHub github, String owner, String repo, String path) async {
+  RepositorySlug slug = RepositorySlug(owner, repo);
+  RepositoryContents contents =
+      await github.repositories.getContents(slug, path);
+  dev.log(contents.file?.text ?? "null...", name: "github");
+  return jsonDecode(contents.file?.text ?? "");
+}
+
+Future<List<Server>> getServers() async {
+  final github = GitHub(auth: Authentication.anonymous());
+
+  var file = await fetchJsonFromRepo(
+      github, 'panthuncia', 'sailbot_servers', 'servers.json');
+  var list = file?['servers'] as List;
+  List<Server> serverList = list.map((i) => Server.fromJson(i)).toList();
+
+  return serverList;
+}

@@ -16,6 +16,8 @@ import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_linux.dart';
+import 'package:sailbot_telemetry_flutter/utils/github_helper.dart'
+    as github_helper;
 
 GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
@@ -84,7 +86,6 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-
     //control widgets
     _trimTabControlWidget = CircleDragWidget(
       width: 100,
@@ -103,13 +104,21 @@ class _MapPageState extends State<MapPage> {
       key: rudderKey,
     );
 
-    _servers["172.29.201.10"] =
-        DropdownMenuEntry(value: "172.29.201.10", label: "sailbot-nano");
-    _servers["172.29.81.241"] =
-        DropdownMenuEntry(value: "172.29.81.241", label: "sailbot-orangepi");
-    _selectedValue = _servers.values.first.value;
-    setState(() {
-      //update servers list
+    // _servers["172.29.201.10"] =
+    //     DropdownMenuEntry(value: "172.29.201.10", label: "sailbot-nano");
+    // _servers["172.29.81.241"] =
+    //     DropdownMenuEntry(value: "172.29.81.241", label: "sailbot-orangepi");
+    //_servers["0.0.0.0"] = DropdownMenuEntry(value: "0.0.0.0", label: "ERR");
+    github_helper.getServers().then((servers) {
+      setState(() {
+        //update servers list
+        for (github_helper.Server server in servers) {
+          dev.log("Server: ${server.name}, ${server.address}", name: "github");
+          _servers[server.address] =
+              DropdownMenuEntry(value: server.address, label: server.name);
+        }
+        _selectedValue = _servers.values.first.value;
+      });
     });
     //gRPC client
     networkComms = NetworkComms(receiveBoatState, "172.29.81.241");
