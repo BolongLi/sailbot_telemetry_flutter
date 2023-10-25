@@ -256,10 +256,14 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
+  _restartNode(String val) {
+    networkComms?.restartNode(val);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: buildDrawer(context, MapPage.route, _nodeStates),
+      drawer: buildDrawer(context, MapPage.route, _nodeStates, _restartNode),
       endDrawer: Drawer(
         child: ListView(
           children: [

@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:sailbot_telemetry_flutter/pages/map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
@@ -26,8 +27,8 @@ Widget _buildMenuItem(
   );
 }
 
-Drawer buildDrawer(
-    BuildContext context, String currentRoute, List<NodeInfo> nodeStates) {
+Drawer buildDrawer(BuildContext context, String currentRoute,
+    List<NodeInfo> nodeStates, Function nodeRestartCallback) {
   var nodeStatusWidgets = <Widget>[];
   const Color colorOk = Color.fromARGB(255, 0, 255, 0);
   const Color colorWarn = Color.fromARGB(255, 255, 129, 10);
@@ -45,9 +46,18 @@ Drawer buildDrawer(
           BoxDecoration(color: color, border: Border.all(color: Colors.black)),
       child: SizedBox(
         height: displayHeight(context) / 20,
-        child: Text(
-          nodeInfo.name,
-          textAlign: TextAlign.center,
+        child: PopupMenuButton(
+          itemBuilder: (context) => [
+            PopupMenuItem(
+                value: nodeInfo.name, child: Text("Restart " + nodeInfo.name))
+          ],
+          child: Text(
+            nodeInfo.name,
+            textAlign: TextAlign.center,
+          ),
+          onSelected: (value) {
+            nodeRestartCallback(value);
+          },
         ),
       ),
     );

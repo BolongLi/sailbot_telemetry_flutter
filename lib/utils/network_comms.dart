@@ -2,13 +2,14 @@ import 'dart:async';
 import 'package:grpc/grpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
-import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/connect.pbgrpc.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/node_restart.pbgrpc.dart';
 import 'dart:developer' as dev; //log() conflicts with math
 
 class NetworkComms {
   String? _server;
   ExecuteControlCommandServiceClient? _controlCommandStub;
   SendBoatStateServiceClient? _sendBoatStateStub;
+  RestartNodeServiceClient? _restartNodeStub;
   Function _boatStateCallback;
   Timer? _timer;
 
@@ -61,10 +62,20 @@ class NetworkComms {
     dev.log("created channel", name: 'network');
     _controlCommandStub = ExecuteControlCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
+    _restartNodeStub = RestartNodeServiceClient(channel);
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
       _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {
         _boatStateCallback(boatState);
       });
+    });
+  }
+
+  restartNode(String node) {
+    RestartNodeRequest request = RestartNodeRequest();
+    request.nodeName = node;
+    _restartNodeStub?.restartNode(request).then((response) {
+      dev.log("Restart node: ${response.success ? "success" : "fail"}",
+          name: "network");
     });
   }
 
