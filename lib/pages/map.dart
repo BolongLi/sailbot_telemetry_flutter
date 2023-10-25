@@ -321,6 +321,7 @@ class _MapPageState extends State<MapPage> {
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
                   ),
+                  PolylineLayer(polylines: _polylines),
                   MarkerLayer(markers: [
                     Marker(
                         point: _boatLatLng,
@@ -335,7 +336,6 @@ class _MapPageState extends State<MapPage> {
                         width: 30,
                         child: Image.asset("assets/boat.png"))
                   ]),
-                  PolylineLayer(polylines: _polylines),
                 ],
               ),
             ),
