@@ -219,6 +219,21 @@ class _MapPageState extends State<MapPage> {
         borderColor: Colors.red.withOpacity(0.4),
       ));
 
+      var previousBoatPoints = boatState.previousPositions.points;
+      var previousPoints = <LatLng>[];
+      if (previousBoatPoints.isNotEmpty) {
+        previousPoints.add(_boatLatLng);
+      }
+      for (var point in previousBoatPoints) {
+        previousPoints.add(LatLng(point.latitude, point.longitude));
+      }
+      _polylines.add(Polyline(
+        points: previousPoints,
+        strokeWidth: 4,
+        color: Colors.black.withOpacity(0.6),
+        isDotted: true,
+      ));
+
       bool allOk = true;
       bool error = false;
       bool warn = false;
@@ -268,6 +283,18 @@ class _MapPageState extends State<MapPage> {
                     _resetComms(newValue);
                   },
                 ),
+                Expanded(
+                    child: MaterialButton(
+                  onPressed: () {},
+                  color: Colors.blue,
+                  textColor: Colors.white,
+                  child: Icon(
+                    Icons.add,
+                    size: 24,
+                  ),
+                  padding: EdgeInsets.all(16),
+                  shape: CircleBorder(),
+                )),
               ]),
             ),
           ],
