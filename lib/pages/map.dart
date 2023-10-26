@@ -46,6 +46,7 @@ class _MapPageState extends State<MapPage> {
   var _nodeStates = <NodeInfo>[];
   var _polylines = <Polyline>[];
   DateTime _lastTime = DateTime.now();
+  double _currentBallastValue = 0.0;
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -147,11 +148,11 @@ class _MapPageState extends State<MapPage> {
   }
 
   _updateRudderAngle(double angle) {
-    networkComms?.updateRudderAngle(angle);
+    networkComms?.setRudderAngle(angle);
   }
 
   _updateTrimtabAngle(double angle) {
-    networkComms?.updateTrimtabAngle(angle);
+    networkComms?.setTrimtabAngle(angle);
   }
 
   void _updateControlAngles(int rudderStickValue, int trimTabStickValue) {
@@ -323,11 +324,13 @@ class _MapPageState extends State<MapPage> {
                     initialCenter: const LatLng(51.5, -0.09),
                     initialZoom: 5,
                     interactionOptions: InteractionOptions(
-                        flags: InteractiveFlag.all - InteractiveFlag.rotate,
-                        cursorKeyboardRotationOptions:
-                            CursorKeyboardRotationOptions(
-                          isKeyTrigger: (key) => false,
-                        ))),
+                      flags: InteractiveFlag.all - InteractiveFlag.rotate,
+                      cursorKeyboardRotationOptions:
+                          CursorKeyboardRotationOptions(
+                        isKeyTrigger: (key) => false,
+                      ),
+                    ),
+                    onTap: (tapPosition, latlng) {}),
                 children: [
                   TileLayer(
                     urlTemplate:
@@ -421,16 +424,16 @@ class _MapPageState extends State<MapPage> {
             ),
           ),
           Transform.translate(
-            offset: const Offset(-40, -40),
+            offset: Offset(displayWidth(context) / 4.5, -40),
             child: Align(
-              alignment: Alignment.bottomCenter,
+              alignment: Alignment.bottomLeft,
               // centerPoint:
               //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
               child: _rudderControlWidget,
             ),
           ),
           Transform.translate(
-            offset: const Offset(-40, -40),
+            offset: Offset(-displayWidth(context) / 4.5, -40),
             child: Align(
               alignment: Alignment.bottomRight,
               // centerPoint:
@@ -438,6 +441,29 @@ class _MapPageState extends State<MapPage> {
               child: _trimTabControlWidget,
             ),
           ),
+          Transform.translate(
+            offset: Offset(0, displayHeight(context) / 2 - 140),
+            child: Align(
+              //alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: 20,
+                width: 200,
+                child: Slider(
+                  inactiveColor: Color.fromARGB(255, 100, 100, 100),
+                  activeColor: Color.fromARGB(255, 0, 100, 255),
+                  value: _currentBallastValue,
+                  max: 1.0,
+                  min: -1.0,
+                  onChanged: (value) {
+                    setState(() {
+                      _currentBallastValue = value;
+                      networkComms?.setBallastPosition(value);
+                    });
+                  },
+                ),
+              ),
+            ),
+          )
         ],
       ),
     );

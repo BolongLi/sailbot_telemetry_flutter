@@ -79,22 +79,62 @@ class NetworkComms {
     });
   }
 
-  _sendControlCommand(double value, ControlType type) {
+  setRudderAngle(double angle) {
     ControlCommand command = ControlCommand();
-    command.controlType = type;
-    command.controlValue = value;
+    command.controlType = ControlType.CONTROL_TYPE_RUDDER;
+    command.rudderControlValue = angle;
     _controlCommandStub?.executeControlCommand(command).then((response) {
       ControlExecutionStatus status = response.executionStatus;
-      dev.log("Control command returned with response: $status",
+      dev.log("Rudder control command returned with response: $status",
           name: 'network');
     });
   }
 
-  updateRudderAngle(double angle) {
-    _sendControlCommand(angle, ControlType.CONTROL_TYPE_RUDDER);
+  setTrimtabAngle(double angle) {
+    ControlCommand command = ControlCommand();
+    command.controlType = ControlType.CONTROL_TYPE_TRIM_TAB;
+    command.trimtabControlValue = angle;
+    _controlCommandStub?.executeControlCommand(command).then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Trimtab control command returned with response: $status",
+          name: 'network');
+    });
   }
 
-  updateTrimtabAngle(double angle) {
-    _sendControlCommand(angle, ControlType.CONTROL_TYPE_TRIM_TAB);
+  setBallastPosition(
+      double
+          position /* positions from -1.0 (full left) to 1.0 (full right) */) {
+    ControlCommand command = ControlCommand();
+    command.controlType = ControlType.CONTROL_TYPE_BALLAST;
+    command.ballastControlValue = position;
+    _controlCommandStub?.executeControlCommand(command).then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Ballast control command returned with response: $status",
+          name: 'network');
+    });
+  }
+
+  setPath(Path newPath) {
+    ControlCommand command = ControlCommand();
+    command.controlType = ControlType.CONTROL_TYPE_OVERRIDE_PATH;
+    command.newPath.points.addAll(newPath.points);
+    command.newPath.latitudeDirection = newPath.latitudeDirection;
+    command.newPath.longitudeDirection = newPath.longitudeDirection;
+    _controlCommandStub?.executeControlCommand(command).then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Override path control command returned with response: $status",
+          name: 'network');
+    });
+  }
+
+  setAutonomousMode(AutonomousMode mode) {
+    ControlCommand command = ControlCommand();
+    command.controlType = ControlType.CONTROL_TYPE_SET_AUTONOMOUS_MODE;
+    command.autonomousMode = mode;
+    _controlCommandStub?.executeControlCommand(command).then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Autonomous mode control command returned with response: $status",
+          name: 'network');
+    });
   }
 }
