@@ -7,7 +7,12 @@ import 'dart:developer' as dev; //log() conflicts with math
 
 class NetworkComms {
   String? _server;
-  ExecuteControlCommandServiceClient? _controlCommandStub;
+  ExecuteRudderCommandServiceClient? _rudderCommandServiceClient;
+  ExecuteTrimTabCommandServiceClient? _trimTabCommandServiceClient;
+  ExecuteBallastCommandServiceClient? _ballastCommandServiceClient;
+  ExecuteAutonomousModeCommandServiceClient?
+      _autonomousModeCommandServiceClient;
+  ExecuteSetPathCommandServiceClient? _setPathCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   RestartNodeServiceClient? _restartNodeStub;
   Function _boatStateCallback;
@@ -60,7 +65,12 @@ class NetworkComms {
       }
     });
     dev.log("created channel", name: 'network');
-    _controlCommandStub = ExecuteControlCommandServiceClient(channel);
+    _rudderCommandServiceClient = ExecuteRudderCommandServiceClient(channel);
+    _trimTabCommandServiceClient = ExecuteTrimTabCommandServiceClient(channel);
+    _ballastCommandServiceClient = ExecuteBallastCommandServiceClient(channel);
+    _autonomousModeCommandServiceClient =
+        ExecuteAutonomousModeCommandServiceClient(channel);
+    _setPathCommandServiceClient = ExecuteSetPathCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
@@ -80,10 +90,10 @@ class NetworkComms {
   }
 
   setRudderAngle(double angle) {
-    ControlCommand command = ControlCommand();
-    command.controlType = ControlType.CONTROL_TYPE_RUDDER;
+    RudderCommand command = RudderCommand();
     command.rudderControlValue = angle;
-    _controlCommandStub?.executeControlCommand(command).then((response) {
+    dev.log("sending rudder command", name: "network");
+    _rudderCommandServiceClient?.executeRudderCommand(command).then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Rudder control command returned with response: $status",
           name: 'network');
@@ -91,10 +101,11 @@ class NetworkComms {
   }
 
   setTrimtabAngle(double angle) {
-    ControlCommand command = ControlCommand();
-    command.controlType = ControlType.CONTROL_TYPE_TRIM_TAB;
+    TrimTabCommand command = TrimTabCommand();
     command.trimtabControlValue = angle;
-    _controlCommandStub?.executeControlCommand(command).then((response) {
+    _trimTabCommandServiceClient
+        ?.executeTrimTabCommand(command)
+        .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Trimtab control command returned with response: $status",
           name: 'network');
@@ -104,10 +115,11 @@ class NetworkComms {
   setBallastPosition(
       double
           position /* positions from -1.0 (full left) to 1.0 (full right) */) {
-    ControlCommand command = ControlCommand();
-    command.controlType = ControlType.CONTROL_TYPE_BALLAST;
+    BallastCommand command = BallastCommand();
     command.ballastControlValue = position;
-    _controlCommandStub?.executeControlCommand(command).then((response) {
+    _ballastCommandServiceClient
+        ?.executeBallastCommand(command)
+        .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Ballast control command returned with response: $status",
           name: 'network');
@@ -115,12 +127,13 @@ class NetworkComms {
   }
 
   setPath(Path newPath) {
-    ControlCommand command = ControlCommand();
-    command.controlType = ControlType.CONTROL_TYPE_OVERRIDE_PATH;
+    SetPathCommand command = SetPathCommand();
     command.newPath.points.addAll(newPath.points);
     command.newPath.latitudeDirection = newPath.latitudeDirection;
     command.newPath.longitudeDirection = newPath.longitudeDirection;
-    _controlCommandStub?.executeControlCommand(command).then((response) {
+    _setPathCommandServiceClient
+        ?.executeSetPathCommand(command)
+        .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Override path control command returned with response: $status",
           name: 'network');
@@ -128,10 +141,11 @@ class NetworkComms {
   }
 
   setAutonomousMode(AutonomousMode mode) {
-    ControlCommand command = ControlCommand();
-    command.controlType = ControlType.CONTROL_TYPE_SET_AUTONOMOUS_MODE;
+    AutonomousModeCommand command = AutonomousModeCommand();
     command.autonomousMode = mode;
-    _controlCommandStub?.executeControlCommand(command).then((response) {
+    _autonomousModeCommandServiceClient
+        ?.executeAutonomousModeCommand(command)
+        .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Autonomous mode control command returned with response: $status",
           name: 'network');
