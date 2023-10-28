@@ -84,6 +84,10 @@ class _MapPageState extends State<MapPage> {
   Map<String, DropdownMenuEntry<String>> _servers = HashMap();
   String? _selectedValue;
 
+  final _formKey = GlobalKey<FormState>();
+  String _field1 = '';
+  String _field2 = '';
+
   @override
   void initState() {
     super.initState();
@@ -277,11 +281,11 @@ class _MapPageState extends State<MapPage> {
       endDrawer: Drawer(
         child: ListView(
           children: [
-            DrawerHeader(
-              child: Text('Drawer Header'),
+            const DrawerHeader(
               decoration: BoxDecoration(
                 color: Colors.blue,
               ),
+              child: Text('Drawer Header'),
             ),
             ListTile(
               title: Row(children: <Widget>[
@@ -299,15 +303,17 @@ class _MapPageState extends State<MapPage> {
                 ),
                 Expanded(
                     child: MaterialButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    _showFormDialog(context);
+                  },
                   color: Colors.blue,
                   textColor: Colors.white,
-                  child: Icon(
+                  padding: const EdgeInsets.all(16),
+                  shape: const CircleBorder(),
+                  child: const Icon(
                     Icons.add,
                     size: 24,
                   ),
-                  padding: EdgeInsets.all(16),
-                  shape: CircleBorder(),
                 )),
               ]),
             ),
@@ -449,8 +455,8 @@ class _MapPageState extends State<MapPage> {
                 height: 20,
                 width: 200,
                 child: Slider(
-                  inactiveColor: Color.fromARGB(255, 100, 100, 100),
-                  activeColor: Color.fromARGB(255, 0, 100, 255),
+                  inactiveColor: const Color.fromARGB(255, 100, 100, 100),
+                  activeColor: const Color.fromARGB(255, 0, 100, 255),
                   value: _currentBallastValue,
                   max: 1.0,
                   min: -1.0,
@@ -574,6 +580,69 @@ class _MapPageState extends State<MapPage> {
           annotations: annotations,
         ),
       ],
+    );
+  }
+
+  void _showFormDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Add Server'),
+          content: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Make dialog content compact
+              children: [
+                TextFormField(
+                  onChanged: (value) => _field1 = value,
+                  decoration: InputDecoration(labelText: 'IP Address'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  onChanged: (value) => _field2 = value,
+                  decoration: InputDecoration(labelText: 'Nickname'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Submit'),
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  _servers[_field1] =
+                      DropdownMenuEntry(value: _field1, label: _field2);
+                  // Handle the form submission logic here
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Field 1: $_field1, Field 2: $_field2'),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
