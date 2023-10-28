@@ -126,11 +126,11 @@ class NetworkComms {
     });
   }
 
-  setPath(Path newPath) {
+  setPath(
+    Path newPath,
+  ) {
     SetPathCommand command = SetPathCommand();
-    command.newPath.points.addAll(newPath.points);
-    command.newPath.latitudeDirection = newPath.latitudeDirection;
-    command.newPath.longitudeDirection = newPath.longitudeDirection;
+    command.newPath = newPath;
     _setPathCommandServiceClient
         ?.executeSetPathCommand(command)
         .then((response) {

@@ -2,7 +2,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart'
+    as boat_state;
 import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_windows.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer.dart';
 import 'package:latlong2/latlong.dart';
@@ -36,6 +37,7 @@ class _MapPageState extends State<MapPage> {
   double _trueWind = 0.0;
   double _apparentWind = 0.0;
   LatLng _boatLatLng = LatLng(51.5, -0.09);
+  boat_state.Path? _currentPath;
   final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
@@ -43,7 +45,7 @@ class _MapPageState extends State<MapPage> {
   final Color _connectionColorOK = const Color.fromARGB(255, 0, 255, 0);
   Color _connectionIconColor = const Color.fromARGB(255, 0, 0, 0);
   int _lastConnectionTime = DateTime.now().millisecondsSinceEpoch - 3000;
-  var _nodeStates = <NodeInfo>[];
+  var _nodeStates = <boat_state.NodeInfo>[];
   var _polylines = <Polyline>[];
   DateTime _lastTime = DateTime.now();
   double _currentBallastValue = 0.0;
@@ -87,6 +89,10 @@ class _MapPageState extends State<MapPage> {
   final _formKey = GlobalKey<FormState>();
   String _field1 = '';
   String _field2 = '';
+
+  bool _showPathButton = false;
+  LatLng? _mapPressLatLng;
+  TapPosition? _mapPressPosition;
 
   @override
   void initState() {
@@ -204,7 +210,7 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  receiveBoatState(BoatState boatState) {
+  receiveBoatState(boat_state.BoatState boatState) {
     setState(() {
       DateTime currentTime = DateTime.now();
       _lastConnectionTime = currentTime.millisecondsSinceEpoch;
@@ -214,7 +220,7 @@ class _MapPageState extends State<MapPage> {
       _apparentWind = boatState.apparentWind.direction;
       _nodeStates = boatState.nodeStates;
       _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
-
+      _currentPath = boatState.currentPath;
       //path lines
       _polylines.clear();
       var boatPoints = boatState.currentPath.points;
@@ -251,12 +257,12 @@ class _MapPageState extends State<MapPage> {
       bool allOk = true;
       bool error = false;
       bool warn = false;
-      for (NodeInfo status in boatState.nodeStates) {
-        if (status.status == NodeStatus.NODE_STATUS_ERROR) {
+      for (boat_state.NodeInfo status in boatState.nodeStates) {
+        if (status.status == boat_state.NodeStatus.NODE_STATUS_ERROR) {
           allOk = false;
           error = true;
         }
-        if (status.status == NodeStatus.NODE_STATUS_WARN) {
+        if (status.status == boat_state.NodeStatus.NODE_STATUS_WARN) {
           allOk = false;
           warn = true;
         }
@@ -327,16 +333,44 @@ class _MapPageState extends State<MapPage> {
             Flexible(
               child: FlutterMap(
                 options: MapOptions(
-                    initialCenter: const LatLng(51.5, -0.09),
-                    initialZoom: 5,
-                    interactionOptions: InteractionOptions(
-                      flags: InteractiveFlag.all - InteractiveFlag.rotate,
-                      cursorKeyboardRotationOptions:
-                          CursorKeyboardRotationOptions(
-                        isKeyTrigger: (key) => false,
-                      ),
+                  initialCenter: const LatLng(51.5, -0.09),
+                  initialZoom: 5,
+                  interactionOptions: InteractionOptions(
+                    flags: InteractiveFlag.all - InteractiveFlag.rotate,
+                    cursorKeyboardRotationOptions:
+                        CursorKeyboardRotationOptions(
+                      isKeyTrigger: (key) => false,
                     ),
-                    onTap: (tapPosition, latlng) {}),
+                  ),
+                  onTap: (tapPosition, latlng) {
+                    setState(() {
+                      _showPathButton = false;
+                      _mapPressPosition = null;
+                      _mapPressLatLng = null;
+                    });
+                  },
+                  onSecondaryTap: (tapPosition, point) {
+                    setState(() {
+                      _showPathButton = true;
+                      _mapPressPosition = tapPosition;
+                      _mapPressLatLng = point;
+                    });
+                  },
+                  onLongPress: (tapPosition, latlng) {
+                    setState(() {
+                      _showPathButton = true;
+                      _mapPressPosition = tapPosition;
+                      _mapPressLatLng = latlng;
+                    });
+                  },
+                  onPositionChanged: (position, hasGesture) {
+                    setState(() {
+                      _showPathButton = false;
+                      _mapPressPosition = null;
+                      _mapPressLatLng = null;
+                    });
+                  },
+                ),
                 children: [
                   TileLayer(
                     urlTemplate:
@@ -447,6 +481,50 @@ class _MapPageState extends State<MapPage> {
               child: _trimTabControlWidget,
             ),
           ),
+          if (_showPathButton)
+            Positioned(
+              top: _mapPressPosition?.global.dy,
+              left: _mapPressPosition?.global.dx,
+              child: FloatingActionButton(
+                onPressed: () {
+                  // Handle button press
+                  //_currentPath = boat_state.Path();
+                  var tappedPoint = boat_state.Point();
+                  tappedPoint.latitude = _mapPressLatLng?.latitude ?? 0;
+                  tappedPoint.longitude = _mapPressLatLng?.longitude ?? 0;
+                  //_currentPath?.points.add(tappedPoint);
+
+                  var newPath = boat_state.Path();
+                  newPath.points.addAll(_currentPath?.points ?? List.empty());
+                  newPath.points.add(tappedPoint);
+                  newPath.latitudeDirection =
+                      _currentPath?.latitudeDirection ?? "";
+                  newPath.longitudeDirection =
+                      _currentPath?.longitudeDirection ?? "";
+
+                  networkComms?.setPath(newPath);
+                  setState(
+                    () {
+                      _showPathButton = false; // Hide the button after pressing
+                    },
+                  );
+                },
+                child: Icon(Icons.add),
+              ),
+            ),
+          if (_showPathButton)
+            Positioned(
+              top: (_mapPressPosition?.global.dy)! - 5.0,
+              left: (_mapPressPosition?.global.dx)! - 5.0,
+              child: Container(
+                width: 10, // Circle diameter
+                height: 10, // Circle diameter
+                decoration: BoxDecoration(
+                  color: Colors.red, // Circle color
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           Transform.translate(
             offset: Offset(0, displayHeight(context) / 2 - 140),
             child: Align(
