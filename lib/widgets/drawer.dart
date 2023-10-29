@@ -27,8 +27,12 @@ Widget _buildMenuItem(
   );
 }
 
-Drawer buildDrawer(BuildContext context, String currentRoute,
-    List<NodeInfo> nodeStates, Function nodeRestartCallback) {
+Drawer buildDrawer(
+    BuildContext context,
+    String currentRoute,
+    List<NodeInfo> nodeStates,
+    Function nodeRestartCallback,
+    Function clearPathCallback) {
   var nodeStatusWidgets = <Widget>[];
   const Color colorOk = Color.fromARGB(255, 0, 255, 0);
   const Color colorWarn = Color.fromARGB(255, 255, 129, 10);
@@ -65,26 +69,73 @@ Drawer buildDrawer(BuildContext context, String currentRoute,
   }
 
   return Drawer(
-    child: Row(
-      children: <Widget>[
-        Expanded(
-          child: ListView(
-            children: <Widget>[
-              _buildMenuItem(
-                context,
-                const Text('Map'),
-                MapPage.route,
-                currentRoute,
-                icon: const Icon(Icons.home),
+    child: Column(children: [
+      Expanded(
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: ListView(
+                children: <Widget>[
+                  _buildMenuItem(
+                    context,
+                    const Text('Map'),
+                    MapPage.route,
+                    currentRoute,
+                    icon: const Icon(Icons.home),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Expanded(
+                child: ListView(
+              children: nodeStatusWidgets,
+            )),
+          ],
         ),
-        Expanded(
-            child: ListView(
-          children: nodeStatusWidgets,
-        )),
-      ],
-    ),
+      ),
+      FloatingActionButton(
+        onPressed: () {
+          _showclearPathFormDialog(context, clearPathCallback);
+        },
+        child: Text(textAlign: TextAlign.center, "Clear path"),
+      )
+    ]),
+  );
+}
+
+void _showclearPathFormDialog(BuildContext context, Function clearCallback) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(textAlign: TextAlign.center, 'Confirm clear path'),
+        content: Form(
+          child: Text(
+              textAlign: TextAlign.center,
+              "If the boat is path-following,\nit will switch to station-keeping."),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: Text('Clear'),
+            onPressed: () {
+              clearCallback();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(textAlign: TextAlign.center, 'Cleared path'),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+    },
   );
 }

@@ -147,6 +147,11 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
+  void _clearPath() {
+    var newPath = boat_state.Path();
+    networkComms?.setPath(newPath);
+  }
+
   @override
   void dispose() {
     //_gamepadListener?.cancel();
@@ -283,7 +288,8 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: buildDrawer(context, MapPage.route, _nodeStates, _restartNode),
+      drawer: buildDrawer(
+          context, MapPage.route, _nodeStates, _restartNode, _clearPath),
       endDrawer: Drawer(
         child: ListView(
           children: [
