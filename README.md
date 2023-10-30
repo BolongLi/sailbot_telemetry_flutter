@@ -8,7 +8,7 @@ Setup:
 
 1. Install flutter+Dart https://docs.flutter.dev/get-started/install
 
-2 (recommended) Install VS code & flutter extension
+2. (recommended) Install VS code & flutter extension
 
 3. Clone this repo & run "git submodule init" and "git submodule update" in the project folder (may need to be run in git bash, submodules are bugged on windows with SSH keys)
 
