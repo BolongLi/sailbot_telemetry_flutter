@@ -34,17 +34,36 @@ Drawer buildDrawer(
     Function nodeRestartCallback,
     Function clearPathCallback) {
   var nodeStatusWidgets = <Widget>[];
-  const Color colorOk = Color.fromARGB(255, 0, 255, 0);
+  const Color colorUnknown = Color.fromARGB(255, 255, 255, 255);
+  const Color colorConfiguring = Color.fromARGB(255, 162, 50, 168);
+  const Color colorInactive = Color.fromARGB(255, 46, 76, 209);
+  const Color colorActivating = Color.fromARGB(255, 46, 209, 206);
+  const Color colorActive = Color.fromARGB(255, 32, 216, 32);
+  const Color colorOk = Color.fromARGB(255, 32, 216, 32);
   const Color colorWarn = Color.fromARGB(255, 255, 129, 10);
   const Color colorError = Color.fromARGB(255, 255, 0, 0);
   for (NodeInfo nodeInfo in nodeStates) {
-    Color color = colorOk;
-    if (nodeInfo.status == NodeStatus.NODE_STATUS_WARN) {
-      color = colorWarn;
+    Color color = colorUnknown;
+    switch (nodeInfo.lifecycleState) {
+      case NodeLifecycleState.NODE_LIFECYCLE_STATE_CONFIGURING:
+        color = colorConfiguring;
+      case NodeLifecycleState.NODE_LIFECYCLE_STATE_INACTIVE:
+        color = colorInactive;
+      case NodeLifecycleState.NODE_LIFECYCLE_STATE_ACTIVATING:
+        color = colorActivating;
+      case NodeLifecycleState.NODE_LIFECYCLE_STATE_ACTIVE:
+        color = colorActive;
+      default:
     }
-    if (nodeInfo.status == NodeStatus.NODE_STATUS_ERROR) {
-      color = colorError;
+
+    switch (nodeInfo.status) {
+      case NodeStatus.NODE_STATUS_WARN:
+        color = colorWarn;
+      case NodeStatus.NODE_STATUS_ERROR:
+        color = colorError;
+      default:
     }
+
     Widget newWidget = DecoratedBox(
       decoration:
           BoxDecoration(color: color, border: Border.all(color: Colors.black)),
