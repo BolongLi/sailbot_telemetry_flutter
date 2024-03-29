@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'dart:developer' as dev;
 
 class CircleDragWidget extends StatefulWidget {
   final double width;
   final double height;
   final double lineLength;
   final double radius;
+  bool isInteractive;
   double angle = 0;
   Function callback;
+  @override
   final GlobalKey<CircleDragWidgetState> key;
 
   CircleDragWidget({
@@ -17,43 +18,55 @@ class CircleDragWidget extends StatefulWidget {
     required this.lineLength,
     required this.radius,
     required this.callback,
+    required this.isInteractive,
     required this.key,
   }) : super(key: key);
 
   @override
   CircleDragWidgetState createState() =>
-      CircleDragWidgetState(lineLength, width);
+      CircleDragWidgetState(lineLength, width, isInteractive);
 
   void incrementAngle(amount) {
     key.currentState?._incrementAngle(amount);
+  }
+
+  void setInteractive(interactive) {
+    key.currentState?._updateInteractivity(interactive);
   }
 }
 
 class CircleDragWidgetState extends State<CircleDragWidget> {
   Offset position;
 
-  CircleDragWidgetState(var lineLength, var width)
+  CircleDragWidgetState(var lineLength, var width, var interactive)
       : position = Offset(width / 2, lineLength);
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: Colors.blue),
+      decoration: BoxDecoration(
+          color: widget.isInteractive ? Colors.blue : Colors.grey),
       child: ConstrainedBox(
         constraints:
             BoxConstraints.tightFor(width: widget.width, height: widget.height),
-        child: GestureDetector(
-          onPanDown: (details) {
-            _updateCirclePosition(details.localPosition.dx);
-          },
-          onPanUpdate: (details) {
-            _updateCirclePosition(details.localPosition.dx);
-          },
-          child: CustomPaint(
-            painter: CirclePainter(position, widget.radius),
-            child: Container(),
-          ),
-        ),
+        child: widget.isInteractive
+            ? GestureDetector(
+                onPanDown: (details) {
+                  _updateCirclePosition(details.localPosition.dx);
+                },
+                onPanUpdate: (details) {
+                  _updateCirclePosition(details.localPosition.dx);
+                },
+                child: CustomPaint(
+                  painter: CirclePainter(position, widget.radius),
+                  child: Container(),
+                ),
+              )
+            : CustomPaint(
+                // If not interactive, simply display without GestureDetector
+                painter: CirclePainter(position, widget.radius),
+                child: Container(),
+              ),
       ),
     );
   }
@@ -81,6 +94,12 @@ class CircleDragWidgetState extends State<CircleDragWidget> {
 
     setState(() {
       position = Offset(circleX, circleY);
+    });
+  }
+
+  void _updateInteractivity(bool isInteractive) {
+    setState(() {
+      widget.isInteractive = isInteractive;
     });
   }
 }

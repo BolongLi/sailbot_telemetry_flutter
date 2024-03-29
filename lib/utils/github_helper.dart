@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:github/github.dart';
-import 'package:http/http.dart' as http;
 import 'dart:developer' as dev;
 
 class Server {
@@ -29,7 +28,7 @@ Future<Map<String, dynamic>?> fetchJsonFromRepo(
 }
 
 Future<List<Server>> getServers() async {
-  final github = GitHub(auth: Authentication.anonymous());
+  final github = GitHub(auth: const Authentication.anonymous());
 
   var file = await fetchJsonFromRepo(
       github, 'panthuncia', 'sailbot_servers', 'servers.json');

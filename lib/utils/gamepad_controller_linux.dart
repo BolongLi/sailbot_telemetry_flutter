@@ -1,12 +1,11 @@
 import 'package:gamepads/gamepads.dart';
 import 'dart:async';
-import 'dart:developer' as dev;
 
 class GamepadControllerLinux {
   StreamSubscription<GamepadEvent>? _gamepadListener;
   double _rudderStickValue = 0;
   double _trimTabStickValue = 0;
-  Function _updateControlAngles;
+  final Function _updateControlAngles;
   GamepadControllerLinux(this._updateControlAngles) {
     _gamepadListener = Gamepads.events.listen((event) {
       //dev.log(event.key);

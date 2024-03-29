@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as dev;
 import 'package:win32_gamepad/win32_gamepad.dart';
 
 class GamepadControllerWindows {
-  Function _updateControlAngles;
+  final Function _updateControlAngles;
   Gamepad? _gamepad;
   GamepadControllerWindows(this._updateControlAngles) {
     _gamepad = Gamepad(0);

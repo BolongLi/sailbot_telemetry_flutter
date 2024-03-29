@@ -15,7 +15,7 @@ class NetworkComms {
   ExecuteSetPathCommandServiceClient? _setPathCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   RestartNodeServiceClient? _restartNodeStub;
-  Function _boatStateCallback;
+  final Function _boatStateCallback;
   Timer? _timer;
 
   NetworkComms(this._boatStateCallback, this._server) {

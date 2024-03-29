@@ -26,7 +26,7 @@ class AlignPositioned extends SingleChildRenderObjectWidget {
       widthFactor: widthFactor,
       heightFactor: heightFactor,
       textDirection: Directionality.maybeOf(context),
-      centerPoint: this.centerPoint,
+      centerPoint: centerPoint,
     );
   }
 
@@ -76,6 +76,7 @@ class RenderAlignPositionedBox extends RenderAligningShiftedBox {
     markNeedsLayout();
   }
 
+  @override
   set alignment(AlignmentGeometry value) {
     super.alignment = value;
     _resolvedAlignment = alignment.resolve(textDirection);
@@ -135,7 +136,7 @@ class RenderAlignPositionedBox extends RenderAligningShiftedBox {
       final moveX = _resolvedAlignment.x - 1;
       final moveY = _resolvedAlignment.y - 1;
       log(_resolvedAlignment.y.toString());
-      childParentData.offset = this.centerPoint +
+      childParentData.offset = centerPoint +
           Offset(
             child!.size.width / 2 * moveX,
             child!.size.height / 2 * moveY,

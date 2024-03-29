@@ -1,4 +1,3 @@
-import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:sailbot_telemetry_flutter/pages/map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
@@ -72,7 +71,7 @@ Drawer buildDrawer(
         child: PopupMenuButton(
           itemBuilder: (context) => [
             PopupMenuItem(
-                value: nodeInfo.name, child: Text("Restart " + nodeInfo.name))
+                value: nodeInfo.name, child: Text("Restart ${nodeInfo.name}"))
           ],
           child: Text(
             nodeInfo.name,
@@ -116,7 +115,7 @@ Drawer buildDrawer(
         onPressed: () {
           _showclearPathFormDialog(context, clearPathCallback);
         },
-        child: Text(textAlign: TextAlign.center, "Clear path"),
+        child: const Text(textAlign: TextAlign.center, "Clear path"),
       )
     ]),
   );
@@ -127,8 +126,8 @@ void _showclearPathFormDialog(BuildContext context, Function clearCallback) {
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: Text(textAlign: TextAlign.center, 'Confirm clear path'),
-        content: Form(
+        title: const Text(textAlign: TextAlign.center, 'Confirm clear path'),
+        content: const Form(
           child: Text(
               textAlign: TextAlign.center,
               "If the boat is path-following,\nit will switch to station-keeping."),
@@ -136,18 +135,18 @@ void _showclearPathFormDialog(BuildContext context, Function clearCallback) {
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           TextButton(
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
             onPressed: () {
               Navigator.of(context).pop();
             },
           ),
           TextButton(
-            child: Text('Clear'),
+            child: const Text('Clear'),
             onPressed: () {
               clearCallback();
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text(textAlign: TextAlign.center, 'Cleared path'),
                 ),
               );

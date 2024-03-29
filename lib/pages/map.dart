@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart'
     as boat_state;
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbenum.dart';
 import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_windows.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer.dart';
 import 'package:latlong2/latlong.dart';
@@ -36,7 +37,7 @@ class _MapPageState extends State<MapPage> {
   double _heading = 0.0;
   double _trueWind = 0.0;
   double _apparentWind = 0.0;
-  LatLng _boatLatLng = LatLng(51.5, -0.09);
+  LatLng _boatLatLng = const LatLng(51.5, -0.09);
   boat_state.Path? _currentPath;
   final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
@@ -46,7 +47,7 @@ class _MapPageState extends State<MapPage> {
   Color _connectionIconColor = const Color.fromARGB(255, 0, 0, 0);
   int _lastConnectionTime = DateTime.now().millisecondsSinceEpoch - 3000;
   var _nodeStates = <boat_state.NodeInfo>[];
-  var _polylines = <Polyline>[];
+  final _polylines = <Polyline>[];
   DateTime _lastTime = DateTime.now();
   double _currentBallastValue = 0.0;
 
@@ -54,6 +55,15 @@ class _MapPageState extends State<MapPage> {
   //Socket? _socket;
   final int retryDuration = 1; // duration in seconds
   final int connectionTimeout = 1; // timeout duration in seconds
+
+  bool _autoBallast = false;
+
+  String _selectedAction = 'NONE';
+  final Map<String, String> _dropdownOptions = {
+    'NONE': 'Manual',
+    'BALLAST': 'Auto ballast',
+    'FULL': 'Full auto',
+  };
 
   final _compassAnnotations = const <GaugeAnnotation>[
     GaugeAnnotation(
@@ -83,7 +93,7 @@ class _MapPageState extends State<MapPage> {
   CircleDragWidget? _rudderControlWidget;
   final rudderKey = GlobalKey<CircleDragWidgetState>();
 
-  Map<String, DropdownMenuEntry<String>> _servers = HashMap();
+  final Map<String, DropdownMenuEntry<String>> _servers = HashMap();
   String? _selectedValue;
 
   final _formKey = GlobalKey<FormState>();
@@ -103,6 +113,7 @@ class _MapPageState extends State<MapPage> {
       height: 50,
       lineLength: 40,
       radius: 5,
+      isInteractive: true,
       callback: _updateTrimtabAngle,
       key: trimTabKey,
     );
@@ -111,6 +122,7 @@ class _MapPageState extends State<MapPage> {
       height: 50,
       lineLength: 40,
       radius: 5,
+      isInteractive: true,
       callback: _updateRudderAngle,
       key: rudderKey,
     );
@@ -404,6 +416,39 @@ class _MapPageState extends State<MapPage> {
           ]),
           AlignPositioned(
             alignment: Alignment.bottomCenter,
+            centerPoint:
+                Offset(displayWidth(context) / 1.5, displayHeight(context) / 2),
+            //width: min(displayWidth(context) / 3, 200),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white, // Background color for the dropdown button
+                borderRadius: BorderRadius.circular(
+                    10), // Border radius for the container
+                border: Border.all(
+                    color: Colors
+                        .grey), // Border color and width for the container
+              ),
+              child: DropdownButton<String>(
+                value: _selectedAction,
+                dropdownColor: const Color.fromARGB(255, 255, 255, 255),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedAction = newValue!;
+                  });
+                  performActionBasedOnSelection(_selectedAction);
+                },
+                items: _dropdownOptions.entries.map<DropdownMenuItem<String>>(
+                    (MapEntry<String, String> entry) {
+                  return DropdownMenuItem<String>(
+                    value: entry.key,
+                    child: Text(entry.value),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          AlignPositioned(
+            alignment: Alignment.bottomCenter,
             centerPoint: Offset(displayWidth(context) / 1.5, 0),
             //width: min(displayWidth(context) / 3, 200),
             child: Row(
@@ -515,7 +560,7 @@ class _MapPageState extends State<MapPage> {
                     },
                   );
                 },
-                child: Icon(Icons.add),
+                child: const Icon(Icons.add),
               ),
             ),
           if (_showPathButton)
@@ -525,7 +570,7 @@ class _MapPageState extends State<MapPage> {
               child: Container(
                 width: 10, // Circle diameter
                 height: 10, // Circle diameter
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.red, // Circle color
                   shape: BoxShape.circle,
                 ),
@@ -544,12 +589,14 @@ class _MapPageState extends State<MapPage> {
                   value: _currentBallastValue,
                   max: 1.0,
                   min: -1.0,
-                  onChanged: (value) {
-                    setState(() {
-                      _currentBallastValue = value;
-                      networkComms?.setBallastPosition(value);
-                    });
-                  },
+                  onChanged: _autoBallast
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _currentBallastValue = value;
+                            networkComms?.setBallastPosition(value);
+                          });
+                        },
                 ),
               ),
             ),
@@ -557,6 +604,32 @@ class _MapPageState extends State<MapPage> {
         ],
       ),
     );
+  }
+
+  void performActionBasedOnSelection(String selectedAction) {
+    // Perform different actions based on the selected option
+    if (selectedAction == 'NONE') {
+      dev.log('Manual control');
+      networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_NONE);
+
+      _trimTabControlWidget?.setInteractive(true);
+      _rudderControlWidget?.setInteractive(true);
+      _autoBallast = false;
+    } else if (selectedAction == 'BALLAST') {
+      dev.log('Auto ballast');
+      networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_BALLAST);
+
+      _trimTabControlWidget?.setInteractive(true);
+      _rudderControlWidget?.setInteractive(true);
+      _autoBallast = true;
+    } else if (selectedAction == 'FULL') {
+      dev.log('Full auto');
+      networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
+
+      _trimTabControlWidget?.setInteractive(false);
+      _rudderControlWidget?.setInteractive(false);
+      _autoBallast = true;
+    }
   }
 
   SfRadialGauge _buildSpeedGauge() {
@@ -672,7 +745,7 @@ class _MapPageState extends State<MapPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Add Server'),
+          title: const Text('Add Server'),
           content: Form(
             key: _formKey,
             child: Column(
@@ -680,7 +753,7 @@ class _MapPageState extends State<MapPage> {
               children: [
                 TextFormField(
                   onChanged: (value) => _field1 = value,
-                  decoration: InputDecoration(labelText: 'IP Address'),
+                  decoration: const InputDecoration(labelText: 'IP Address'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter some text';
@@ -690,7 +763,7 @@ class _MapPageState extends State<MapPage> {
                 ),
                 TextFormField(
                   onChanged: (value) => _field2 = value,
-                  decoration: InputDecoration(labelText: 'Nickname'),
+                  decoration: const InputDecoration(labelText: 'Nickname'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter some text';
@@ -703,13 +776,13 @@ class _MapPageState extends State<MapPage> {
           ),
           actions: [
             TextButton(
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('Submit'),
+              child: const Text('Submit'),
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   _servers[_field1] =
