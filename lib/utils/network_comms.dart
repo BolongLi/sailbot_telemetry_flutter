@@ -14,11 +14,14 @@ class NetworkComms {
       _autonomousModeCommandServiceClient;
   ExecuteSetPathCommandServiceClient? _setPathCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
+  GetMapServiceClient? _getMapStub;
   RestartNodeServiceClient? _restartNodeStub;
   final Function _boatStateCallback;
+  final Function _mapCallback;
   Timer? _timer;
+  Timer? _mapTimer;
 
-  NetworkComms(this._boatStateCallback, this._server) {
+  NetworkComms(this._boatStateCallback, this._mapCallback, this._server) {
     _createClient();
     dev.log('created client to boat');
   }
@@ -26,6 +29,10 @@ class NetworkComms {
   void reconnect(String server) {
     _server = server;
     _createClient();
+  }
+
+  void cancelMapTimer() {
+    _mapTimer?.cancel();
   }
 
   Future<void> _createClient() async {
@@ -54,6 +61,14 @@ class NetworkComms {
           break;
         case ConnectionState.ready:
           dev.log("Connected to server.", name: 'network');
+          MapRequest request = MapRequest();
+          _getMapStub?.getMap(request).then((response) {
+            dev.log(
+                "got map response: ${response.north}, ${response.south}, ${response.east}, ${response.west}");
+            if (response.north != 0 && response.south != 0) {
+              _mapCallback(response);
+            }
+          });
           break;
         case ConnectionState.transientFailure:
           dev.log("Connection lost. Attempting to reconnect...",
@@ -72,6 +87,7 @@ class NetworkComms {
         ExecuteAutonomousModeCommandServiceClient(channel);
     _setPathCommandServiceClient = ExecuteSetPathCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
+    _getMapStub = GetMapServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
       _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {

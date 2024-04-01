@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -104,6 +105,9 @@ class _MapPageState extends State<MapPage> {
   LatLng? _mapPressLatLng;
   TapPosition? _mapPressPosition;
 
+  ImageProvider? mapImageProvider;
+  LatLngBounds? mapBounds;
+
   @override
   void initState() {
     super.initState();
@@ -144,7 +148,7 @@ class _MapPageState extends State<MapPage> {
       });
     });
     //gRPC client
-    networkComms = NetworkComms(receiveBoatState, "172.29.81.241");
+    networkComms = NetworkComms(receiveBoatState, receiveMap, "172.29.81.241");
     //dev.log("Created comms object", name: "network");("172.29.81.241");
 
     //controller
@@ -224,6 +228,19 @@ class _MapPageState extends State<MapPage> {
       } else {
         _connectionIconColor = _connectionColorOK;
       }
+    });
+  }
+
+  receiveMap(boat_state.MapResponse map) {
+    //dev.log("Callback triggered!");
+    networkComms?.cancelMapTimer();
+    setState(() {
+      mapBounds = LatLngBounds(
+        LatLng(map.north, map.west),
+        LatLng(map.south, map.east),
+      );
+      Uint8List lst = Uint8List.fromList(map.imageData);
+      mapImageProvider = MemoryImage(lst);
     });
   }
 
@@ -410,6 +427,11 @@ class _MapPageState extends State<MapPage> {
                         width: 30,
                         child: Image.asset("assets/boat.png"))
                   ]),
+                  if (mapBounds != null && mapImageProvider != null)
+                    OverlayImageLayer(overlayImages: [
+                      OverlayImage(
+                          imageProvider: mapImageProvider!, bounds: mapBounds!)
+                    ]),
                 ],
               ),
             ),
