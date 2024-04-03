@@ -12,7 +12,7 @@ class NetworkComms {
   ExecuteBallastCommandServiceClient? _ballastCommandServiceClient;
   ExecuteAutonomousModeCommandServiceClient?
       _autonomousModeCommandServiceClient;
-  ExecuteSetPathCommandServiceClient? _setPathCommandServiceClient;
+  ExecuteSetWaypointsCommandServiceClient? _setWaypointsCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   GetMapServiceClient? _getMapStub;
   RestartNodeServiceClient? _restartNodeStub;
@@ -85,7 +85,8 @@ class NetworkComms {
     _ballastCommandServiceClient = ExecuteBallastCommandServiceClient(channel);
     _autonomousModeCommandServiceClient =
         ExecuteAutonomousModeCommandServiceClient(channel);
-    _setPathCommandServiceClient = ExecuteSetPathCommandServiceClient(channel);
+    _setWaypointsCommandServiceClient =
+        ExecuteSetWaypointsCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
     _getMapStub = GetMapServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
@@ -142,16 +143,17 @@ class NetworkComms {
     });
   }
 
-  setPath(
-    Path newPath,
+  setWaypoints(
+    Path newWaypoints,
   ) {
-    SetPathCommand command = SetPathCommand();
-    command.newPath = newPath;
-    _setPathCommandServiceClient
-        ?.executeSetPathCommand(command)
+    SetWaypointsCommand command = SetWaypointsCommand();
+    command.newWaypoints = newWaypoints;
+    _setWaypointsCommandServiceClient
+        ?.executeSetWaypointsCommand(command)
         .then((response) {
       ControlExecutionStatus status = response.executionStatus;
-      dev.log("Override path control command returned with response: $status",
+      dev.log(
+          "Override waypoints control command returned with response: $status",
           name: 'network');
     });
   }

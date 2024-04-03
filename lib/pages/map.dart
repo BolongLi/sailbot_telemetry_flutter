@@ -40,6 +40,7 @@ class _MapPageState extends State<MapPage> {
   double _apparentWind = 0.0;
   LatLng _boatLatLng = const LatLng(51.5, -0.09);
   boat_state.Path? _currentPath;
+  boat_state.Path? _currentWaypoints;
   final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
@@ -49,6 +50,7 @@ class _MapPageState extends State<MapPage> {
   int _lastConnectionTime = DateTime.now().millisecondsSinceEpoch - 3000;
   var _nodeStates = <boat_state.NodeInfo>[];
   final _polylines = <Polyline>[];
+  final _markers = <Marker>[];
   DateTime _lastTime = DateTime.now();
   double _currentBallastValue = 0.0;
 
@@ -164,8 +166,8 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _clearPath() {
-    var newPath = boat_state.Path();
-    networkComms?.setPath(newPath);
+    var newWaypoints = boat_state.Path();
+    networkComms?.setWaypoints(newWaypoints);
   }
 
   @override
@@ -255,9 +257,31 @@ class _MapPageState extends State<MapPage> {
       _nodeStates = boatState.nodeStates;
       _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
       _currentPath = boatState.currentPath;
+      _currentWaypoints = boatState.currentWaypoints;
+      //waypoints
+      _markers.clear();
+      var boatWaypoints = boatState.currentWaypoints.points;
+      for (var point in boatWaypoints) {
+        _markers.add(Marker(
+            point: LatLng(point.latitude, point.longitude),
+            child: const Icon(Icons.star_border_purple500_rounded)));
+      }
+      _markers.add(Marker(
+          point: _boatLatLng,
+          height: 60,
+          width: 60,
+          child: Transform.rotate(
+              angle: _heading * pi / 180,
+              child: Image.asset("assets/arrow.png"))));
+      _markers.add(Marker(
+          point: _boatLatLng,
+          height: 30,
+          width: 30,
+          child: Image.asset("assets/boat.png")));
       //path lines
       _polylines.clear();
       var boatPoints = boatState.currentPath.points;
+      dev.log("Path has ${boatPoints.length} points");
       var points = <LatLng>[];
       if (boatPoints.isNotEmpty) {
         points.add(_boatLatLng);
@@ -368,8 +392,8 @@ class _MapPageState extends State<MapPage> {
             Flexible(
               child: FlutterMap(
                 options: MapOptions(
-                  initialCenter: const LatLng(51.5, -0.09),
-                  initialZoom: 5,
+                  initialCenter: const LatLng(42.277062, -71.756299),
+                  initialZoom: 15,
                   interactionOptions: InteractionOptions(
                     flags: InteractiveFlag.all - InteractiveFlag.rotate,
                     cursorKeyboardRotationOptions:
@@ -413,20 +437,7 @@ class _MapPageState extends State<MapPage> {
                     userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
                   ),
                   PolylineLayer(polylines: _polylines),
-                  MarkerLayer(markers: [
-                    Marker(
-                        point: _boatLatLng,
-                        height: 60,
-                        width: 60,
-                        child: Transform.rotate(
-                            angle: _heading * pi / 180,
-                            child: Image.asset("assets/arrow.png"))),
-                    Marker(
-                        point: _boatLatLng,
-                        height: 30,
-                        width: 30,
-                        child: Image.asset("assets/boat.png"))
-                  ]),
+                  MarkerLayer(markers: _markers),
                   if (mapBounds != null && mapImageProvider != null)
                     OverlayImageLayer(overlayImages: [
                       OverlayImage(
@@ -436,19 +447,16 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
           ]),
-          AlignPositioned(
-            alignment: Alignment.bottomCenter,
-            centerPoint:
-                Offset(displayWidth(context) / 1.5, displayHeight(context) / 2),
+          Align(
+            alignment: Alignment.centerRight,
+            // centerPoint:
+            //     Offset(displayWidth(context), displayHeight(context) / 2),
             //width: min(displayWidth(context) / 3, 200),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white, // Background color for the dropdown button
-                borderRadius: BorderRadius.circular(
-                    10), // Border radius for the container
-                border: Border.all(
-                    color: Colors
-                        .grey), // Border color and width for the container
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey),
               ),
               child: DropdownButton<String>(
                 value: _selectedAction,
@@ -457,7 +465,7 @@ class _MapPageState extends State<MapPage> {
                   setState(() {
                     _selectedAction = newValue!;
                   });
-                  performActionBasedOnSelection(_selectedAction);
+                  setAutonomousMode(_selectedAction);
                 },
                 items: _dropdownOptions.entries.map<DropdownMenuItem<String>>(
                     (MapEntry<String, String> entry) {
@@ -567,15 +575,16 @@ class _MapPageState extends State<MapPage> {
                   tappedPoint.longitude = _mapPressLatLng?.longitude ?? 0;
                   //_currentPath?.points.add(tappedPoint);
 
-                  var newPath = boat_state.Path();
-                  newPath.points.addAll(_currentPath?.points ?? List.empty());
-                  newPath.points.add(tappedPoint);
-                  newPath.latitudeDirection =
-                      _currentPath?.latitudeDirection ?? "";
-                  newPath.longitudeDirection =
-                      _currentPath?.longitudeDirection ?? "";
+                  var newWaypoints = boat_state.Path();
+                  newWaypoints.points
+                      .addAll(_currentWaypoints?.points ?? List.empty());
+                  newWaypoints.points.add(tappedPoint);
+                  newWaypoints.latitudeDirection =
+                      _currentWaypoints?.latitudeDirection ?? "";
+                  newWaypoints.longitudeDirection =
+                      _currentWaypoints?.longitudeDirection ?? "";
 
-                  networkComms?.setPath(newPath);
+                  networkComms?.setWaypoints(newWaypoints);
                   setState(
                     () {
                       _showPathButton = false; // Hide the button after pressing
@@ -628,7 +637,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  void performActionBasedOnSelection(String selectedAction) {
+  void setAutonomousMode(String selectedAction) {
     // Perform different actions based on the selected option
     if (selectedAction == 'NONE') {
       dev.log('Manual control');
