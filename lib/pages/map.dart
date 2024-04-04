@@ -41,6 +41,7 @@ class _MapPageState extends State<MapPage> {
   LatLng _boatLatLng = const LatLng(51.5, -0.09);
   boat_state.Path? _currentPath;
   boat_state.Path? _currentWaypoints;
+  LatLng _currentTargetPosition = const LatLng(51.5, -0.09);
   final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
   final Color _colorError = const Color.fromARGB(255, 255, 0, 0);
@@ -65,6 +66,7 @@ class _MapPageState extends State<MapPage> {
   final Map<String, String> _dropdownOptions = {
     'NONE': 'Manual',
     'BALLAST': 'Auto ballast',
+    'TRIMTAB': 'Auto Trimtab',
     'FULL': 'Full auto',
   };
 
@@ -258,6 +260,9 @@ class _MapPageState extends State<MapPage> {
       _boatLatLng = LatLng(boatState.latitude, boatState.longitude);
       _currentPath = boatState.currentPath;
       _currentWaypoints = boatState.currentWaypoints;
+
+      _currentTargetPosition = LatLng(boatState.currentTargetPoint.latitude,
+          boatState.currentTargetPoint.longitude);
       //waypoints
       _markers.clear();
       var boatWaypoints = boatState.currentWaypoints.points;
@@ -278,6 +283,14 @@ class _MapPageState extends State<MapPage> {
           height: 30,
           width: 30,
           child: Image.asset("assets/boat.png")));
+      _markers.add(Marker(
+          point: _currentTargetPosition,
+          height: 20,
+          width: 20,
+          child: const Icon(
+            Icons.star_border_purple500_rounded,
+            color: Colors.red,
+          )));
       //path lines
       _polylines.clear();
       var boatPoints = boatState.currentPath.points;
@@ -436,13 +449,13 @@ class _MapPageState extends State<MapPage> {
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
                   ),
-                  PolylineLayer(polylines: _polylines),
-                  MarkerLayer(markers: _markers),
                   if (mapBounds != null && mapImageProvider != null)
                     OverlayImageLayer(overlayImages: [
                       OverlayImage(
                           imageProvider: mapImageProvider!, bounds: mapBounds!)
                     ]),
+                  PolylineLayer(polylines: _polylines),
+                  MarkerLayer(markers: _markers),
                 ],
               ),
             ),
@@ -653,6 +666,10 @@ class _MapPageState extends State<MapPage> {
       _trimTabControlWidget?.setInteractive(true);
       _rudderControlWidget?.setInteractive(true);
       _autoBallast = true;
+    } else if (selectedAction == 'TRIMTAB') {
+      dev.log('auto trimtab');
+      networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_TRIMTAB);
+      _trimTabControlWidget?.setInteractive(false);
     } else if (selectedAction == 'FULL') {
       dev.log('Full auto');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
