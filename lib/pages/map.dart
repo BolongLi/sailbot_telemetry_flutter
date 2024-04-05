@@ -121,6 +121,7 @@ class _MapPageState extends State<MapPage> {
       height: 50,
       lineLength: 40,
       radius: 5,
+      resetOnRelease: false,
       isInteractive: true,
       callback: _updateTrimtabAngle,
       key: trimTabKey,
@@ -130,6 +131,7 @@ class _MapPageState extends State<MapPage> {
       height: 50,
       lineLength: 40,
       radius: 5,
+      resetOnRelease: true,
       isInteractive: true,
       callback: _updateRudderAngle,
       key: rudderKey,
@@ -149,11 +151,15 @@ class _MapPageState extends State<MapPage> {
               DropdownMenuEntry(value: server.address, label: server.name);
         }
         _selectedValue = _servers.values.first.value;
+        if (_selectedValue != null) {
+          _resetComms(_selectedValue!);
+        }
+        dev.log("Created comms object with address: $_selectedValue",
+            name: "network");
       });
     });
     //gRPC client
-    networkComms = NetworkComms(receiveBoatState, receiveMap, "172.29.81.241");
-    //dev.log("Created comms object", name: "network");("172.29.81.241");
+    networkComms = NetworkComms(receiveBoatState, receiveMap, _selectedValue);
 
     //controller
     if (io.Platform.isLinux) {

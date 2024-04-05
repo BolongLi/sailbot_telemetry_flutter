@@ -6,6 +6,7 @@ class CircleDragWidget extends StatefulWidget {
   final double height;
   final double lineLength;
   final double radius;
+  final bool resetOnRelease;
   bool isInteractive;
   double angle = 0;
   Function callback;
@@ -18,6 +19,7 @@ class CircleDragWidget extends StatefulWidget {
     required this.lineLength,
     required this.radius,
     required this.callback,
+    required this.resetOnRelease,
     required this.isInteractive,
     required this.key,
   }) : super(key: key);
@@ -57,6 +59,11 @@ class CircleDragWidgetState extends State<CircleDragWidget> {
                 onPanUpdate: (details) {
                   _updateCirclePosition(details.localPosition.dx);
                 },
+                onPanEnd: (details) {
+                  if (widget.resetOnRelease) {
+                    _resetAngle();
+                  }
+                },
                 child: CustomPaint(
                   painter: CirclePainter(position, widget.radius),
                   child: Container(),
@@ -69,6 +76,16 @@ class CircleDragWidgetState extends State<CircleDragWidget> {
               ),
       ),
     );
+  }
+
+  void _resetAngle() {
+    widget.angle = 0; // Reset angle to zero
+    widget.callback(widget.angle);
+    double circleX = widget.width / 2 + widget.lineLength * sin(widget.angle);
+    double circleY = widget.lineLength * cos(widget.angle);
+    setState(() {
+      position = Offset(circleX, circleY);
+    });
   }
 
   void _incrementAngle(double amount) {
