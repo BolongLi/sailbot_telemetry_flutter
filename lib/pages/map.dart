@@ -54,6 +54,7 @@ class _MapPageState extends State<MapPage> {
   final _markers = <Marker>[];
   DateTime _lastTime = DateTime.now();
   double _currentBallastValue = 0.0;
+  String _currentTrimState = "MIN_LIFT";
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -270,6 +271,23 @@ class _MapPageState extends State<MapPage> {
 
       _currentTargetPosition = LatLng(boatState.currentTargetPoint.latitude,
           boatState.currentTargetPoint.longitude);
+      switch (boatState.currentTrimState) {
+        case TrimState.TRIM_STATE_MIN_LIFT:
+          _currentTrimState = "MIN_LIFT";
+          break;
+        case TrimState.TRIM_STATE_MAX_LIFT_PORT:
+          _currentTrimState = "MAX_LIFT_PORT";
+          break;
+        case TrimState.TRIM_STATE_MAX_LIFT_STARBOARD:
+          _currentTrimState = "MAX_LIFT_STBD";
+          break;
+        case TrimState.TRIM_STATE_MAX_DRAG_PORT:
+          _currentTrimState = "MAX_DRAG_PORT";
+          break;
+        case TrimState.TRIM_STATE_MAX_DRAG_STARBOARD:
+          _currentTrimState = "MAX_DRAG_STBD";
+          break;
+      }
       //waypoints
       _markers.clear();
       var boatWaypoints = boatState.currentWaypoints.points;
@@ -473,28 +491,48 @@ class _MapPageState extends State<MapPage> {
             //     Offset(displayWidth(context), displayHeight(context) / 2),
             //width: min(displayWidth(context) / 3, 200),
             child: Container(
+              width: 150,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.white.withOpacity(1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.grey),
               ),
-              child: DropdownButton<String>(
-                value: _selectedAction,
-                dropdownColor: const Color.fromARGB(255, 255, 255, 255),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedAction = newValue!;
-                  });
-                  setAutonomousMode(_selectedAction);
-                },
-                items: _dropdownOptions.entries.map<DropdownMenuItem<String>>(
-                    (MapEntry<String, String> entry) {
-                  return DropdownMenuItem<String>(
-                    value: entry.key,
-                    child: Text(entry.value),
-                  );
-                }).toList(),
-              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  Text("Trim state:"),
+                  Text(
+                    _currentTrimState,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ]),
+                Divider(
+                  color: Colors.grey, // Color of the divider
+                  thickness: 1, // Thickness of the divider line
+                  indent: 5, // Starting space of the line (left padding)
+                  endIndent: 5, // Ending space of the line (right padding)
+                ),
+                Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  Text("Auto mode:"),
+                  DropdownButton<String>(
+                    value: _selectedAction,
+                    dropdownColor: const Color.fromARGB(255, 255, 255, 255),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedAction = newValue!;
+                      });
+                      setAutonomousMode(_selectedAction);
+                    },
+                    items: _dropdownOptions.entries
+                        .map<DropdownMenuItem<String>>(
+                            (MapEntry<String, String> entry) {
+                      return DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      );
+                    }).toList(),
+                  ),
+                ]),
+              ]),
             ),
           ),
           AlignPositioned(
