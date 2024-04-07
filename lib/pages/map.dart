@@ -61,6 +61,7 @@ class _MapPageState extends State<MapPage> {
   final int connectionTimeout = 1; // timeout duration in seconds
 
   bool _autoBallast = false;
+  var lastBallastTime = DateTime.now().millisecondsSinceEpoch;
 
   String _selectedAction = 'NONE';
   final Map<String, String> _dropdownOptions = {
@@ -644,7 +645,11 @@ class _MapPageState extends State<MapPage> {
                       : (value) {
                           setState(() {
                             _currentBallastValue = value;
-                            networkComms?.setBallastPosition(value);
+                            var time = DateTime.now().millisecondsSinceEpoch;
+                            if (time - lastBallastTime > 50) {
+                              networkComms?.setBallastPosition(value);
+                              lastBallastTime = time;
+                            }
                           });
                         },
                 ),

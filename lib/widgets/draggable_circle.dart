@@ -39,7 +39,7 @@ class CircleDragWidget extends StatefulWidget {
 
 class CircleDragWidgetState extends State<CircleDragWidget> {
   Offset position;
-
+  var lastTime = DateTime.now().millisecondsSinceEpoch;
   CircleDragWidgetState(var lineLength, var width, var interactive)
       : position = Offset(width / 2, lineLength);
 
@@ -63,6 +63,7 @@ class CircleDragWidgetState extends State<CircleDragWidget> {
                   if (widget.resetOnRelease) {
                     _resetAngle();
                   }
+                  widget.callback(widget.angle);
                 },
                 child: CustomPaint(
                   painter: CirclePainter(position, widget.radius),
@@ -105,7 +106,11 @@ class CircleDragWidgetState extends State<CircleDragWidget> {
     if (dx < 0 || dx > widget.width) return;
     double angle = (dx - (widget.width / 2)) / (widget.width / 2) * (pi / 2);
     widget.angle = angle;
-    widget.callback(angle);
+    var time = DateTime.now().millisecondsSinceEpoch;
+    if (time - lastTime > 50) {
+      widget.callback(angle);
+      lastTime = time;
+    }
     double circleX = widget.width / 2 + widget.lineLength * sin(angle);
     double circleY = widget.lineLength * cos(angle);
 
