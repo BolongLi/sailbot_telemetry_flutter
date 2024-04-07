@@ -119,20 +119,20 @@ class _MapPageState extends State<MapPage> {
     super.initState();
     //control widgets
     _trimTabControlWidget = CircleDragWidget(
-      width: 100,
-      height: 50,
-      lineLength: 40,
-      radius: 5,
+      width: 150,
+      height: 75,
+      lineLength: 60,
+      radius: 7,
       resetOnRelease: false,
       isInteractive: true,
       callback: _updateTrimtabAngle,
       key: trimTabKey,
     );
     _rudderControlWidget = CircleDragWidget(
-      width: 100,
-      height: 50,
-      lineLength: 40,
-      radius: 5,
+      width: 150,
+      height: 75,
+      lineLength: 60,
+      radius: 7,
       resetOnRelease: true,
       isInteractive: true,
       callback: _updateRudderAngle,
@@ -491,6 +491,7 @@ class _MapPageState extends State<MapPage> {
             //     Offset(displayWidth(context), displayHeight(context) / 2),
             //width: min(displayWidth(context) / 3, 200),
             child: Container(
+              transform: Matrix4.translationValues(0, 120.0, 0),
               width: 150,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(1),
@@ -603,7 +604,7 @@ class _MapPageState extends State<MapPage> {
             ),
           ),
           Transform.translate(
-            offset: Offset(displayWidth(context) / 4.5, -40),
+            offset: Offset(displayWidth(context) / 9, -40),
             child: Align(
               alignment: Alignment.bottomLeft,
               // centerPoint:
@@ -612,7 +613,7 @@ class _MapPageState extends State<MapPage> {
             ),
           ),
           Transform.translate(
-            offset: Offset(-displayWidth(context) / 4.5, -40),
+            offset: Offset(-displayWidth(context) / 9, -40),
             child: Align(
               alignment: Alignment.bottomRight,
               // centerPoint:
@@ -666,12 +667,12 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
           Transform.translate(
-            offset: Offset(0, displayHeight(context) / 2 - 140),
+            offset: Offset(0, displayHeight(context) / 2 - 180),
             child: Align(
               //alignment: Alignment.bottomCenter,
               child: SizedBox(
-                height: 20,
-                width: 200,
+                height: 40,
+                width: 300,
                 child: Slider(
                   inactiveColor: const Color.fromARGB(255, 100, 100, 100),
                   activeColor: const Color.fromARGB(255, 0, 100, 255),
