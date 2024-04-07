@@ -499,20 +499,20 @@ class _MapPageState extends State<MapPage> {
               ),
               child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
                 Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                  Text("Trim state:"),
+                  const Text("Trim state:"),
                   Text(
                     _currentTrimState,
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ]),
-                Divider(
+                const Divider(
                   color: Colors.grey, // Color of the divider
                   thickness: 1, // Thickness of the divider line
                   indent: 5, // Starting space of the line (left padding)
                   endIndent: 5, // Ending space of the line (right padding)
                 ),
                 Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                  Text("Auto mode:"),
+                  const Text("Auto mode:"),
                   DropdownButton<String>(
                     value: _selectedAction,
                     dropdownColor: const Color.fromARGB(255, 255, 255, 255),
