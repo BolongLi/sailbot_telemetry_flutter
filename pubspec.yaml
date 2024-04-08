@@ -99,6 +99,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  fonts:
+    - family: MyFlutterApp
+      fonts:
+        - asset: assets/fonts/u_turn.ttf
   assets:
     - assets/arrow.png
     - assets/boat.png

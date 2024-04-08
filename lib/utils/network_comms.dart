@@ -144,7 +144,7 @@ class NetworkComms {
   }
 
   setWaypoints(
-    Path newWaypoints,
+    WaypointPath newWaypoints,
   ) {
     SetWaypointsCommand command = SetWaypointsCommand();
     command.newWaypoints = newWaypoints;

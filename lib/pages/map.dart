@@ -21,6 +21,7 @@ import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_linux.dart';
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart'
     as github_helper;
+import 'package:sailbot_telemetry_flutter/widgets/icons.dart';
 
 GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
@@ -40,7 +41,7 @@ class _MapPageState extends State<MapPage> {
   double _apparentWind = 0.0;
   LatLng _boatLatLng = const LatLng(51.5, -0.09);
   boat_state.Path? _currentPath;
-  boat_state.Path? _currentWaypoints;
+  boat_state.WaypointPath? _currentWaypoints;
   LatLng _currentTargetPosition = const LatLng(51.5, -0.09);
   final Color _colorOk = const Color.fromARGB(255, 0, 0, 0);
   final Color _colorWarn = const Color.fromARGB(255, 255, 129, 10);
@@ -176,7 +177,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _clearPath() {
-    var newWaypoints = boat_state.Path();
+    var newWaypoints = boat_state.WaypointPath();
     networkComms?.setWaypoints(newWaypoints);
   }
 
@@ -290,10 +291,10 @@ class _MapPageState extends State<MapPage> {
       }
       //waypoints
       _markers.clear();
-      var boatWaypoints = boatState.currentWaypoints.points;
-      for (var point in boatWaypoints) {
+      var boatWaypoints = boatState.currentWaypoints.waypoints;
+      for (var waypoint in boatWaypoints) {
         _markers.add(Marker(
-            point: LatLng(point.latitude, point.longitude),
+            point: LatLng(waypoint.point.latitude, waypoint.point.longitude),
             child: const Icon(Icons.star_border_purple500_rounded)));
       }
       _markers.add(Marker(
@@ -370,6 +371,29 @@ class _MapPageState extends State<MapPage> {
         if (error) _menuIconColor = _colorError;
       }
     });
+  }
+
+  _addWaypoint(WaypointType type) {
+    // Handle button press
+    //_currentPath = boat_state.Path();
+    var tappedPoint = boat_state.Waypoint();
+    tappedPoint.type = type;
+    var point = boat_state.Point();
+    point.latitude = _mapPressLatLng?.latitude ?? 0;
+    point.longitude = _mapPressLatLng?.longitude ?? 0;
+    tappedPoint.point = point;
+    //_currentPath?.points.add(tappedPoint);
+
+    var newWaypoints = boat_state.WaypointPath();
+    newWaypoints.waypoints.addAll(_currentWaypoints?.waypoints ?? List.empty());
+    newWaypoints.waypoints.add(tappedPoint);
+
+    networkComms?.setWaypoints(newWaypoints);
+    setState(
+      () {
+        _showPathButton = false; // Hide the button after pressing
+      },
+    );
   }
 
   _restartNode(String val) {
@@ -625,33 +649,32 @@ class _MapPageState extends State<MapPage> {
             Positioned(
               top: _mapPressPosition?.global.dy,
               left: _mapPressPosition?.global.dx,
-              child: FloatingActionButton(
-                onPressed: () {
-                  // Handle button press
-                  //_currentPath = boat_state.Path();
-                  var tappedPoint = boat_state.Point();
-                  tappedPoint.latitude = _mapPressLatLng?.latitude ?? 0;
-                  tappedPoint.longitude = _mapPressLatLng?.longitude ?? 0;
-                  //_currentPath?.points.add(tappedPoint);
-
-                  var newWaypoints = boat_state.Path();
-                  newWaypoints.points
-                      .addAll(_currentWaypoints?.points ?? List.empty());
-                  newWaypoints.points.add(tappedPoint);
-                  newWaypoints.latitudeDirection =
-                      _currentWaypoints?.latitudeDirection ?? "";
-                  newWaypoints.longitudeDirection =
-                      _currentWaypoints?.longitudeDirection ?? "";
-
-                  networkComms?.setWaypoints(newWaypoints);
-                  setState(
-                    () {
-                      _showPathButton = false; // Hide the button after pressing
-                    },
-                  );
-                },
-                child: const Icon(Icons.add),
-              ),
+              child: Column(children: <Widget>[
+                FloatingActionButton(
+                  onPressed: () {
+                    _addWaypoint(WaypointType.WAYPOINT_TYPE_INTERSECT);
+                  },
+                  child: const Icon(Icons.add),
+                ),
+                FloatingActionButton(
+                  onPressed: () {
+                    _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_RIGHT);
+                  },
+                  child: Transform(
+                      transform: Matrix4.rotationX(pi),
+                      alignment: Alignment.center,
+                      child: const Icon(MyFlutterApp.u_turn)),
+                ),
+                FloatingActionButton(
+                  onPressed: () {
+                    _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_LEFT);
+                  },
+                  child: Transform(
+                      transform: Matrix4.rotationZ(pi),
+                      alignment: Alignment.center,
+                      child: const Icon(MyFlutterApp.u_turn)),
+                )
+              ]),
             ),
           if (_showPathButton)
             Positioned(
