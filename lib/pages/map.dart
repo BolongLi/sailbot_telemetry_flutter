@@ -55,7 +55,7 @@ class _MapPageState extends State<MapPage> {
   final _markers = <Marker>[];
   DateTime _lastTime = DateTime.now();
   double _currentBallastValue = 0.0;
-  String _currentTrimState = "MIN_LIFT";
+  String _currentTrimState = "MANUAL";
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -287,6 +287,9 @@ class _MapPageState extends State<MapPage> {
           break;
         case TrimState.TRIM_STATE_MAX_DRAG_STARBOARD:
           _currentTrimState = "MAX_DRAG_STBD";
+          break;
+        case TrimState.TRIM_STATE_MANUAL:
+          _currentTrimState = "MANUAL";
           break;
       }
       //waypoints
