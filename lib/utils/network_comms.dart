@@ -13,6 +13,7 @@ class NetworkComms {
   ExecuteAutonomousModeCommandServiceClient?
       _autonomousModeCommandServiceClient;
   ExecuteSetWaypointsCommandServiceClient? _setWaypointsCommandServiceClient;
+  ExecuteAddWaypointCommandServiceClient? _addWaypointCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   GetMapServiceClient? _getMapStub;
   RestartNodeServiceClient? _restartNodeStub;
@@ -87,6 +88,8 @@ class NetworkComms {
         ExecuteAutonomousModeCommandServiceClient(channel);
     _setWaypointsCommandServiceClient =
         ExecuteSetWaypointsCommandServiceClient(channel);
+    _addWaypointCommandServiceClient =
+        ExecuteAddWaypointCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
     _getMapStub = GetMapServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
@@ -154,6 +157,20 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log(
           "Override waypoints control command returned with response: $status",
+          name: 'network');
+    });
+  }
+
+  addWaypoint(
+    Waypoint newWaypoint,
+  ) {
+    AddWaypointCommand command = AddWaypointCommand();
+    command.newWaypoint = newWaypoint;
+    _addWaypointCommandServiceClient
+        ?.executeAddWaypointCommand(command)
+        .then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Add waypoint control command returned with response: $status",
           name: 'network');
     });
   }

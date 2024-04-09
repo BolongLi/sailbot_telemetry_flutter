@@ -377,21 +377,14 @@ class _MapPageState extends State<MapPage> {
   }
 
   _addWaypoint(WaypointType type) {
-    // Handle button press
-    //_currentPath = boat_state.Path();
     var tappedPoint = boat_state.Waypoint();
     tappedPoint.type = type;
     var point = boat_state.Point();
     point.latitude = _mapPressLatLng?.latitude ?? 0;
     point.longitude = _mapPressLatLng?.longitude ?? 0;
     tappedPoint.point = point;
-    //_currentPath?.points.add(tappedPoint);
 
-    var newWaypoints = boat_state.WaypointPath();
-    newWaypoints.waypoints.addAll(_currentWaypoints?.waypoints ?? List.empty());
-    newWaypoints.waypoints.add(tappedPoint);
-
-    networkComms?.setWaypoints(newWaypoints);
+    networkComms?.addWaypoint(tappedPoint);
     setState(
       () {
         _showPathButton = false; // Hide the button after pressing
