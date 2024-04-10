@@ -23,6 +23,28 @@ import 'package:sailbot_telemetry_flutter/utils/github_helper.dart'
     as github_helper;
 import 'package:sailbot_telemetry_flutter/widgets/icons.dart';
 
+double radians(double degrees) => degrees * (pi / 180.0);
+double degrees(double radians) => radians * (180.0 / pi);
+double calculateBearing(LatLng start, LatLng end) {
+  var startLat = radians(start.latitude);
+  var startLng = radians(start.longitude);
+  var endLat = radians(end.latitude);
+  var endLng = radians(end.longitude);
+
+  var dLong = endLng - startLng;
+
+  var dPhi = log(tan(endLat / 2.0 + pi / 4.0) / tan(startLat / 2.0 + pi / 4.0));
+  if (dLong.abs() > pi) {
+    if (dLong > 0.0) {
+      dLong = -(2.0 * pi - dLong);
+    } else {
+      dLong = (2.0 * pi + dLong);
+    }
+  }
+
+  return (degrees(atan2(dLong, dPhi)) + 360.0) % 360.0;
+}
+
 GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
 class MapPage extends StatefulWidget {
@@ -328,8 +350,29 @@ class _MapPageState extends State<MapPage> {
       if (boatPoints.isNotEmpty) {
         points.add(_boatLatLng);
       }
-      for (var point in boatPoints) {
-        points.add(LatLng(point.latitude, point.longitude));
+      for (int i = 0; i < boatPoints.length; i++) {
+        var point = boatPoints[i];
+        var latlng = LatLng(point.latitude, point.longitude);
+        points.add(latlng);
+
+        double bearing = 0;
+        if (i < boatPoints.length - 1) {
+          var nextPoint = boatPoints[i + 1];
+          var nextLatLng = LatLng(nextPoint.latitude, nextPoint.longitude);
+          bearing = calculateBearing(latlng, nextLatLng);
+        } else if (i != 0) {
+          var prevPoint = boatPoints[i - 1];
+          var nextLatLng = LatLng(prevPoint.latitude, prevPoint.longitude);
+          bearing = calculateBearing(latlng, nextLatLng) + 180;
+        }
+        var marker = Marker(
+          point: latlng,
+          child: Transform.rotate(
+            angle: radians(bearing),
+            child: const Icon(Icons.arrow_circle_up_rounded),
+          ),
+        );
+        _markers.add(marker);
       }
       _polylines.add(Polyline(
         points: points,
