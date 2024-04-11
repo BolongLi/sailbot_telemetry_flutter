@@ -15,6 +15,7 @@ class NetworkComms {
   ExecuteSetWaypointsCommandServiceClient? _setWaypointsCommandServiceClient;
   ExecuteAddWaypointCommandServiceClient? _addWaypointCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
+  StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
   RestartNodeServiceClient? _restartNodeStub;
   final Function _boatStateCallback;
@@ -70,6 +71,18 @@ class NetworkComms {
               _mapCallback(response);
             }
           });
+          final call =
+              _streamBoatStateStub!.streamBoatState(BoatStateRequest());
+          call.listen((BoatState response) {
+            // Handle each boat state response
+            dev.log("Received boat state: ${response.toString()}",
+                name: "network");
+          }, onError: (e) {
+            dev.log("Error: $e", name: "network");
+          }, onDone: () {
+            // Clean up when the stream is closed
+            dev.log("Stream closed", name: "network");
+          });
           break;
         case ConnectionState.transientFailure:
           dev.log("Connection lost. Attempting to reconnect...",
@@ -91,6 +104,7 @@ class NetworkComms {
     _addWaypointCommandServiceClient =
         ExecuteAddWaypointCommandServiceClient(channel);
     _sendBoatStateStub = SendBoatStateServiceClient(channel);
+    _streamBoatStateStub = StreamBoatStateServiceClient(channel);
     _getMapStub = GetMapServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
