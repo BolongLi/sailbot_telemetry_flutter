@@ -607,96 +607,97 @@ class _MapPageState extends State<MapPage> {
             ),
           ]),
           Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              transform: Matrix4.translationValues(0, 120.0, 0),
+              width: 150,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey),
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  const Text("Trim state:"),
+                  Text(
+                    _currentTrimState,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ]),
+                const Divider(
+                  color: Colors.grey,
+                  thickness: 1,
+                  indent: 5,
+                  endIndent: 5,
+                ),
+                Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  const Text("Auto mode:"),
+                  DropdownButton<String>(
+                    value: _selectedAutonomousMode,
+                    dropdownColor: const Color.fromARGB(255, 255, 255, 255),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedAutonomousMode = newValue!;
+                      });
+                      setAutonomousMode(_selectedAutonomousMode);
+                    },
+                    items: _autonomousModeDropdownOptions.entries
+                        .map<DropdownMenuItem<String>>(
+                            (MapEntry<String, String> entry) {
+                      return DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      );
+                    }).toList(),
+                  ),
+                ]),
+              ]),
+            ),
+          ),
+          Align(
+              alignment: Alignment.centerRight,
+              child: MaterialButton(
+                child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded)),
+                onPressed: () {
+                  setState(() {
+                    _showCameraFeed = !_showCameraFeed;
+                    if (_showCameraFeed) {
+                      networkComms?.startVideoStreaming();
+                    } else {
+                      networkComms?.cancelVideoStreaming();
+                    }
+                  });
+                },
+              )),
+          Align(
               alignment: Alignment.centerRight,
               // centerPoint:
               //     Offset(displayWidth(context), displayHeight(context) / 2),
               //width: min(displayWidth(context) / 3, 200),
-              child: Stack(children: <Widget>[
-                _showCameraFeed
-                    ? Positioned(
-                        child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey),
-                            ),
-                            child: DropdownButton<String>(
-                              value: _selectedCameraSource,
-                              dropdownColor:
-                                  const Color.fromARGB(255, 255, 255, 255),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedCameraSource = newValue!;
-                                });
-                                setCameraSource(_selectedCameraSource);
-                              },
-                              items: _cameraSourceDropdownOptions.entries
-                                  .map<DropdownMenuItem<String>>(
-                                      (MapEntry<String, String> entry) {
-                                return DropdownMenuItem<String>(
-                                  value: entry.key,
-                                  child: Text(entry.value),
-                                );
-                              }).toList(),
-                            )))
-                    : const Text(""),
-                Positioned(
-                  top: 50,
-                  child: MaterialButton(
-                    child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.grey),
-                        ),
-                        child: const Icon(Icons.camera_alt_rounded)),
-                    onPressed: () {
-                      setState(() {
-                        _showCameraFeed = !_showCameraFeed;
-                        if (_showCameraFeed) {
-                          networkComms?.startVideoStreaming();
-                        } else {
-                          networkComms?.cancelVideoStreaming();
-                        }
-                      });
-                    },
-                  ),
-                ),
-                Container(
-                  transform: Matrix4.translationValues(0, 120.0, 0),
-                  width: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey),
-                  ),
-                  child:
-                      Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                      const Text("Trim state:"),
-                      Text(
-                        _currentTrimState,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+              child: _showCameraFeed
+                  ? Container(
+                      transform: Matrix4.translationValues(0, -50.0, 0),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey),
                       ),
-                    ]),
-                    const Divider(
-                      color: Colors.grey,
-                      thickness: 1,
-                      indent: 5,
-                      endIndent: 5,
-                    ),
-                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                      const Text("Auto mode:"),
-                      DropdownButton<String>(
-                        value: _selectedAutonomousMode,
+                      child: DropdownButton<String>(
+                        value: _selectedCameraSource,
                         dropdownColor: const Color.fromARGB(255, 255, 255, 255),
                         onChanged: (String? newValue) {
                           setState(() {
-                            _selectedAutonomousMode = newValue!;
+                            _selectedCameraSource = newValue!;
                           });
-                          setAutonomousMode(_selectedAutonomousMode);
+                          setCameraSource(_selectedCameraSource);
                         },
-                        items: _autonomousModeDropdownOptions.entries
+                        items: _cameraSourceDropdownOptions.entries
                             .map<DropdownMenuItem<String>>(
                                 (MapEntry<String, String> entry) {
                           return DropdownMenuItem<String>(
@@ -704,11 +705,8 @@ class _MapPageState extends State<MapPage> {
                             child: Text(entry.value),
                           );
                         }).toList(),
-                      ),
-                    ]),
-                  ]),
-                ),
-              ])),
+                      ))
+                  : const Text("")),
           AlignPositioned(
             alignment: Alignment.bottomCenter,
             centerPoint: Offset(displayWidth(context) / 1.5, 0),
