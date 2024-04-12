@@ -81,7 +81,9 @@ class _MapPageState extends State<MapPage> {
   double _currentBallastValue = 0.0;
   String _currentTrimState = "MANUAL";
   bool _showCameraFeed = false;
-  Uint8List? _latestVideoFrame;
+  MemoryImage? _currentImageProvider;
+  Image? _currentImageWidget;
+  late ImageStreamListener _imageStreamListener;
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -98,6 +100,19 @@ class _MapPageState extends State<MapPage> {
     'TRIMTAB': 'Auto Trimtab',
     'FULL': 'Full auto',
   };
+
+  //callback for updating video feed when images load
+  void _updateImageWidget() {
+    if (mounted) {
+      setState(() {
+        _currentImageWidget = Image(
+          image: _currentImageProvider!,
+          fit: BoxFit.cover,
+          key: UniqueKey(),
+        );
+      });
+    }
+  }
 
   final _compassAnnotations = const <GaugeAnnotation>[
     GaugeAnnotation(
@@ -144,6 +159,16 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
+
+    //init image stream listener here, since _updateImageWidget won't be accessible in construction
+    _imageStreamListener = ImageStreamListener(
+      (ImageInfo info, bool synchronousCall) {
+        _updateImageWidget();
+      },
+      onError: (dynamic exception, StackTrace? stackTrace) {
+        dev.log('Error loading image: $exception');
+      },
+    );
     //control widgets
     _trimTabControlWidget = CircleDragWidget(
       width: 150,
@@ -283,9 +308,13 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  receiveVideoFrame(video_pb.VideoFrame frame) {
+  Future<void> receiveVideoFrame(video_pb.VideoFrame frame) async {
     dev.log("Got frame!");
-    _latestVideoFrame = Uint8List.fromList(frame.data);
+    final newImageProvider = MemoryImage(Uint8List.fromList(frame.data));
+    final ImageStream imageStream =
+        newImageProvider.resolve(ImageConfiguration.empty);
+    imageStream.addListener(_imageStreamListener);
+    _currentImageProvider = newImageProvider;
   }
 
   receiveBoatState(boat_state.BoatState boatState) {
@@ -503,9 +532,8 @@ class _MapPageState extends State<MapPage> {
               child: _showCameraFeed
                   ? Container(
                       width: MediaQuery.of(context).size.width,
-                      child: _latestVideoFrame == null
-                          ? const Center(child: CircularProgressIndicator())
-                          : Image.memory(_latestVideoFrame!, fit: BoxFit.cover))
+                      child: _currentImageWidget ??
+                          const Center(child: CircularProgressIndicator()))
                   : FlutterMap(
                       options: MapOptions(
                         initialCenter: const LatLng(42.277062, -71.756299),
