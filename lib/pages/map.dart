@@ -85,6 +85,12 @@ class _MapPageState extends State<MapPage> {
   Image? _currentImageWidget;
   late ImageStreamListener _imageStreamListener;
 
+  String _selectedCameraSource = 'COLOR';
+  final Map<String, String> _cameraSourceDropdownOptions = {
+    'COLOR': 'Color',
+    'MASK': 'Mask',
+  };
+
   NetworkComms? networkComms;
   //Socket? _socket;
   final int retryDuration = 1; // duration in seconds
@@ -93,8 +99,8 @@ class _MapPageState extends State<MapPage> {
   bool _autoBallast = false;
   var lastBallastTime = DateTime.now().millisecondsSinceEpoch;
 
-  String _selectedAction = 'NONE';
-  final Map<String, String> _dropdownOptions = {
+  String _selectedAutonomousMode = 'NONE';
+  final Map<String, String> _autonomousModeDropdownOptions = {
     'NONE': 'Manual',
     'BALLAST': 'Auto ballast',
     'TRIMTAB': 'Auto Trimtab',
@@ -606,10 +612,44 @@ class _MapPageState extends State<MapPage> {
               //     Offset(displayWidth(context), displayHeight(context) / 2),
               //width: min(displayWidth(context) / 3, 200),
               child: Stack(children: <Widget>[
+                _showCameraFeed
+                    ? Positioned(
+                        child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey),
+                            ),
+                            child: DropdownButton<String>(
+                              value: _selectedCameraSource,
+                              dropdownColor:
+                                  const Color.fromARGB(255, 255, 255, 255),
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  _selectedCameraSource = newValue!;
+                                });
+                                setCameraSource(_selectedCameraSource);
+                              },
+                              items: _cameraSourceDropdownOptions.entries
+                                  .map<DropdownMenuItem<String>>(
+                                      (MapEntry<String, String> entry) {
+                                return DropdownMenuItem<String>(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                );
+                              }).toList(),
+                            )))
+                    : Text(""),
                 Positioned(
                   top: 50,
                   child: MaterialButton(
-                    child: const Icon(Icons.camera_alt_rounded),
+                    child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey),
+                        ),
+                        child: const Icon(Icons.camera_alt_rounded)),
                     onPressed: () {
                       setState(() {
                         _showCameraFeed = !_showCameraFeed;
@@ -648,15 +688,15 @@ class _MapPageState extends State<MapPage> {
                     Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
                       const Text("Auto mode:"),
                       DropdownButton<String>(
-                        value: _selectedAction,
+                        value: _selectedAutonomousMode,
                         dropdownColor: const Color.fromARGB(255, 255, 255, 255),
                         onChanged: (String? newValue) {
                           setState(() {
-                            _selectedAction = newValue!;
+                            _selectedAutonomousMode = newValue!;
                           });
-                          setAutonomousMode(_selectedAction);
+                          setAutonomousMode(_selectedAutonomousMode);
                         },
-                        items: _dropdownOptions.entries
+                        items: _autonomousModeDropdownOptions.entries
                             .map<DropdownMenuItem<String>>(
                                 (MapEntry<String, String> entry) {
                           return DropdownMenuItem<String>(
@@ -832,27 +872,31 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  void setAutonomousMode(String selectedAction) {
+  void setCameraSource(String selectedSource) {
+    networkComms?.setCameraSource(selectedSource);
+  }
+
+  void setAutonomousMode(String selectedMode) {
     // Perform different actions based on the selected option
-    if (selectedAction == 'NONE') {
+    if (selectedMode == 'NONE') {
       dev.log('Manual control');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_NONE);
 
       _trimTabControlWidget?.setInteractive(true);
       _rudderControlWidget?.setInteractive(true);
       _autoBallast = false;
-    } else if (selectedAction == 'BALLAST') {
+    } else if (selectedMode == 'BALLAST') {
       dev.log('Auto ballast');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_BALLAST);
 
       _trimTabControlWidget?.setInteractive(true);
       _rudderControlWidget?.setInteractive(true);
       _autoBallast = true;
-    } else if (selectedAction == 'TRIMTAB') {
+    } else if (selectedMode == 'TRIMTAB') {
       dev.log('auto trimtab');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_TRIMTAB);
       _trimTabControlWidget?.setInteractive(false);
-    } else if (selectedAction == 'FULL') {
+    } else if (selectedMode == 'FULL') {
       dev.log('Full auto');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
 

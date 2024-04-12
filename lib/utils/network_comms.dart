@@ -24,9 +24,9 @@ class NetworkComms {
   final Function _boatStateCallback;
   final Function _mapCallback;
   final Function _videoFrameCallback;
+  String _currentCameraSource = 'COLOR';
+
   Timer? _timer;
-  Timer? _reconnectTimer;
-  final int maxReconnectDelaySeconds = 32;
 
   ClientChannel? channel;
 
@@ -124,7 +124,9 @@ class NetworkComms {
   }
 
   startVideoStreaming() {
-    final call = _videoStreamerStub!.streamVideo(VideoRequest());
+    VideoRequest req = VideoRequest();
+    req.videoSource = _currentCameraSource;
+    final call = _videoStreamerStub!.streamVideo(req);
     _streamSubscription = call.listen((VideoFrame response) {
       _videoFrameCallback(response);
     }, onError: (e) {
@@ -141,6 +143,12 @@ class NetworkComms {
       _streamSubscription = null;
       dev.log("Video stream canceled", name: "network");
     }
+  }
+
+  setCameraSource(String source) {
+    cancelVideoStreaming();
+    _currentCameraSource = source;
+    startVideoStreaming();
   }
 
   restartNode(String node) {
