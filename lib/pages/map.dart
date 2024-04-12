@@ -268,7 +268,6 @@ class _MapPageState extends State<MapPage> {
 
   receiveMap(boat_state.MapResponse map) {
     //dev.log("Callback triggered!");
-    networkComms?.cancelMapTimer();
     setState(() {
       mapBounds = LatLngBounds(
         LatLng(map.north, map.west),

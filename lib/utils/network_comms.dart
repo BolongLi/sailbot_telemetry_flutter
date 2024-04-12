@@ -21,7 +21,6 @@ class NetworkComms {
   final Function _boatStateCallback;
   final Function _mapCallback;
   Timer? _timer;
-  Timer? _mapTimer;
 
   NetworkComms(this._boatStateCallback, this._mapCallback, this._server) {
     _createClient();
@@ -33,8 +32,24 @@ class NetworkComms {
     _createClient();
   }
 
-  void cancelMapTimer() {
-    _mapTimer?.cancel();
+  void _initializeBoatStateStream() {
+    final call = _streamBoatStateStub!.streamBoatState(BoatStateRequest());
+    call.listen((BoatState response) {
+      _boatStateCallback(response);
+    }, onError: (e) {
+      dev.log("Error: $e", name: "network");
+      // Do not attempt to reconnect both here and in onDone, it creates exponential callbacks
+    }, onDone: () {
+      // Stream closed, possibly due to server shutdown or network issue
+      dev.log("Stream closed", name: "network");
+      // Attempt to reconnect after a delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (_server != null) {
+          reconnect(_server!);
+        }
+        _initializeBoatStateStream();
+      });
+    });
   }
 
   Future<void> _createClient() async {
@@ -71,18 +86,8 @@ class NetworkComms {
               _mapCallback(response);
             }
           });
-          final call =
-              _streamBoatStateStub!.streamBoatState(BoatStateRequest());
-          call.listen((BoatState response) {
-            // Handle each boat state response
-            dev.log("Received boat state: ${response.toString()}",
-                name: "network");
-          }, onError: (e) {
-            dev.log("Error: $e", name: "network");
-          }, onDone: () {
-            // Clean up when the stream is closed
-            dev.log("Stream closed", name: "network");
-          });
+
+          _initializeBoatStateStream();
           break;
         case ConnectionState.transientFailure:
           dev.log("Connection lost. Attempting to reconnect...",
@@ -107,11 +112,9 @@ class NetworkComms {
     _streamBoatStateStub = StreamBoatStateServiceClient(channel);
     _getMapStub = GetMapServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
-    _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
-      _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {
-        _boatStateCallback(boatState);
-      });
-    });
+
+    //dummy call to force gRPC to open the connection immediately
+    _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {});
   }
 
   restartNode(String node) {
