@@ -224,7 +224,7 @@ class _MapPageState extends State<MapPage> {
     }
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
-      _connectionIconColorCallback();
+      _connectionStatusCallback();
     });
   }
 
@@ -285,11 +285,19 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  void _connectionIconColorCallback() {
+  void _connectionStatusCallback() {
     setState(() {
       DateTime currentTime = DateTime.now();
       if (currentTime.millisecondsSinceEpoch - _lastConnectionTime > 3000) {
         _connectionIconColor = _colorError;
+        dev.log("Resetting comms");
+        networkComms?.terminate();
+        _currentImageWidget = null;
+        networkComms = NetworkComms(receiveBoatState, receiveMap,
+            receiveVideoFrame, networkComms!.server!);
+        if (_showCameraFeed) {
+          networkComms?.startVideoStreaming();
+        }
       } else {
         _connectionIconColor = _connectionColorOK;
       }
@@ -309,7 +317,6 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> receiveVideoFrame(video_pb.VideoFrame frame) async {
-    dev.log("Got frame!");
     final newImageProvider = MemoryImage(Uint8List.fromList(frame.data));
     final ImageStream imageStream =
         newImageProvider.resolve(ImageConfiguration.empty);

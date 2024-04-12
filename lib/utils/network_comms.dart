@@ -7,7 +7,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/vid
 import 'dart:developer' as dev; //log() conflicts with math
 
 class NetworkComms {
-  String? _server;
+  String? server;
   ExecuteRudderCommandServiceClient? _rudderCommandServiceClient;
   ExecuteTrimTabCommandServiceClient? _trimTabCommandServiceClient;
   ExecuteBallastCommandServiceClient? _ballastCommandServiceClient;
@@ -25,15 +25,19 @@ class NetworkComms {
   final Function _mapCallback;
   final Function _videoFrameCallback;
   Timer? _timer;
+  Timer? _reconnectTimer;
+  final int maxReconnectDelaySeconds = 32;
+
+  ClientChannel? channel;
 
   NetworkComms(this._boatStateCallback, this._mapCallback,
-      this._videoFrameCallback, this._server) {
+      this._videoFrameCallback, this.server) {
     _createClient();
     dev.log('created client to boat');
   }
 
   void reconnect(String server) {
-    _server = server;
+    this.server = server;
     _createClient();
   }
 
@@ -47,25 +51,18 @@ class NetworkComms {
     }, onDone: () {
       // Stream closed, possibly due to server shutdown or network issue
       dev.log("Stream closed", name: "network");
-      // Attempt to reconnect after a delay
-      Future.delayed(const Duration(seconds: 1), () {
-        if (_server != null) {
-          reconnect(_server!);
-        }
-        _initializeBoatStateStream();
-      });
     });
   }
 
   Future<void> _createClient() async {
     _timer?.cancel();
     dev.log("about to create channel", name: 'network');
-    if (_server == null) {
+    if (server == null) {
       dev.log("Something went wrong, server address is null", name: 'network');
       return;
     }
-    var channel = ClientChannel(
-      _server ?? "?",
+    channel = ClientChannel(
+      server ?? "?",
       port: 50051,
       options: const ChannelOptions(
         credentials: ChannelCredentials.insecure(),
@@ -73,7 +70,7 @@ class NetworkComms {
             pingInterval: Duration(seconds: 1), timeout: Duration(seconds: 2)),
       ),
     );
-    channel.onConnectionStateChanged.listen((connectionState) {
+    channel?.onConnectionStateChanged.listen((connectionState) {
       switch (connectionState) {
         case ConnectionState.idle:
           dev.log("Connection is idle.", name: 'network');
@@ -95,8 +92,7 @@ class NetworkComms {
           _initializeBoatStateStream();
           break;
         case ConnectionState.transientFailure:
-          dev.log("Connection lost. Attempting to reconnect...",
-              name: 'network');
+          dev.log("Connection lost, transient failure", name: 'network');
           break;
         case ConnectionState.shutdown:
           dev.log("Connection is shutting down or shut down.", name: 'network');
@@ -104,23 +100,27 @@ class NetworkComms {
       }
     });
     dev.log("created channel", name: 'network');
-    _rudderCommandServiceClient = ExecuteRudderCommandServiceClient(channel);
-    _trimTabCommandServiceClient = ExecuteTrimTabCommandServiceClient(channel);
-    _ballastCommandServiceClient = ExecuteBallastCommandServiceClient(channel);
+    _rudderCommandServiceClient = ExecuteRudderCommandServiceClient(channel!);
+    _trimTabCommandServiceClient = ExecuteTrimTabCommandServiceClient(channel!);
+    _ballastCommandServiceClient = ExecuteBallastCommandServiceClient(channel!);
     _autonomousModeCommandServiceClient =
-        ExecuteAutonomousModeCommandServiceClient(channel);
+        ExecuteAutonomousModeCommandServiceClient(channel!);
     _setWaypointsCommandServiceClient =
-        ExecuteSetWaypointsCommandServiceClient(channel);
+        ExecuteSetWaypointsCommandServiceClient(channel!);
     _addWaypointCommandServiceClient =
-        ExecuteAddWaypointCommandServiceClient(channel);
-    _sendBoatStateStub = SendBoatStateServiceClient(channel);
-    _streamBoatStateStub = StreamBoatStateServiceClient(channel);
-    _getMapStub = GetMapServiceClient(channel);
-    _restartNodeStub = RestartNodeServiceClient(channel);
-    _videoStreamerStub = VideoStreamerClient(channel);
+        ExecuteAddWaypointCommandServiceClient(channel!);
+    _sendBoatStateStub = SendBoatStateServiceClient(channel!);
+    _streamBoatStateStub = StreamBoatStateServiceClient(channel!);
+    _getMapStub = GetMapServiceClient(channel!);
+    _restartNodeStub = RestartNodeServiceClient(channel!);
+    _videoStreamerStub = VideoStreamerClient(channel!);
 
     //dummy call to force gRPC to open the connection immediately
     _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {});
+  }
+
+  terminate() {
+    channel?.terminate();
   }
 
   startVideoStreaming() {
