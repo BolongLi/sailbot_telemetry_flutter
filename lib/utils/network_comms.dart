@@ -3,6 +3,7 @@ import 'package:grpc/grpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/node_restart.pbgrpc.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/video.pbgrpc.dart';
 import 'dart:developer' as dev; //log() conflicts with math
 
 class NetworkComms {
@@ -18,11 +19,15 @@ class NetworkComms {
   StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
   RestartNodeServiceClient? _restartNodeStub;
+  VideoStreamerClient? _videoStreamerStub;
+  StreamSubscription<VideoFrame>? _streamSubscription;
   final Function _boatStateCallback;
   final Function _mapCallback;
+  final Function _videoFrameCallback;
   Timer? _timer;
 
-  NetworkComms(this._boatStateCallback, this._mapCallback, this._server) {
+  NetworkComms(this._boatStateCallback, this._mapCallback,
+      this._videoFrameCallback, this._server) {
     _createClient();
     dev.log('created client to boat');
   }
@@ -112,9 +117,30 @@ class NetworkComms {
     _streamBoatStateStub = StreamBoatStateServiceClient(channel);
     _getMapStub = GetMapServiceClient(channel);
     _restartNodeStub = RestartNodeServiceClient(channel);
+    _videoStreamerStub = VideoStreamerClient(channel);
 
     //dummy call to force gRPC to open the connection immediately
     _sendBoatStateStub?.sendBoatState(BoatStateRequest()).then((boatState) {});
+  }
+
+  startVideoStreaming() {
+    final call = _videoStreamerStub!.streamVideo(VideoRequest());
+    _streamSubscription = call.listen((VideoFrame response) {
+      _videoFrameCallback(response);
+    }, onError: (e) {
+      dev.log("Error: $e", name: "network");
+    }, onDone: () {
+      // Stream closed, possibly due to server shutdown or network issue
+      dev.log("Video stream closed", name: "network");
+    });
+  }
+
+  void cancelVideoStreaming() {
+    if (_streamSubscription != null) {
+      _streamSubscription!.cancel();
+      _streamSubscription = null;
+      dev.log("Video stream canceled", name: "network");
+    }
   }
 
   restartNode(String node) {

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart'
     as boat_state;
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/video.pb.dart'
+    as video_pb;
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbenum.dart';
 import 'package:sailbot_telemetry_flutter/utils/gamepad_controller_windows.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer.dart';
@@ -78,6 +80,8 @@ class _MapPageState extends State<MapPage> {
   DateTime _lastTime = DateTime.now();
   double _currentBallastValue = 0.0;
   String _currentTrimState = "MANUAL";
+  bool _showCameraFeed = false;
+  Uint8List? _latestVideoFrame;
 
   NetworkComms? networkComms;
   //Socket? _socket;
@@ -184,7 +188,8 @@ class _MapPageState extends State<MapPage> {
       });
     });
     //gRPC client
-    networkComms = NetworkComms(receiveBoatState, receiveMap, _selectedValue);
+    networkComms = NetworkComms(
+        receiveBoatState, receiveMap, receiveVideoFrame, _selectedValue);
 
     //controller
     if (io.Platform.isLinux) {
@@ -276,6 +281,11 @@ class _MapPageState extends State<MapPage> {
       Uint8List lst = Uint8List.fromList(map.imageData);
       mapImageProvider = MemoryImage(lst);
     });
+  }
+
+  receiveVideoFrame(video_pb.VideoFrame frame) {
+    dev.log("Got frame!");
+    _latestVideoFrame = Uint8List.fromList(frame.data);
   }
 
   receiveBoatState(boat_state.BoatState boatState) {
@@ -490,114 +500,140 @@ class _MapPageState extends State<MapPage> {
         children: [
           Flex(direction: Axis.horizontal, children: <Widget>[
             Flexible(
-              child: FlutterMap(
-                options: MapOptions(
-                  initialCenter: const LatLng(42.277062, -71.756299),
-                  initialZoom: 15,
-                  interactionOptions: InteractionOptions(
-                    flags: InteractiveFlag.all - InteractiveFlag.rotate,
-                    cursorKeyboardRotationOptions:
-                        CursorKeyboardRotationOptions(
-                      isKeyTrigger: (key) => false,
+              child: _showCameraFeed
+                  ? Container(
+                      width: MediaQuery.of(context).size.width,
+                      child: _latestVideoFrame == null
+                          ? const Center(child: CircularProgressIndicator())
+                          : Image.memory(_latestVideoFrame!, fit: BoxFit.cover))
+                  : FlutterMap(
+                      options: MapOptions(
+                        initialCenter: const LatLng(42.277062, -71.756299),
+                        initialZoom: 15,
+                        interactionOptions: InteractionOptions(
+                          flags: InteractiveFlag.all - InteractiveFlag.rotate,
+                          cursorKeyboardRotationOptions:
+                              CursorKeyboardRotationOptions(
+                            isKeyTrigger: (key) => false,
+                          ),
+                        ),
+                        onTap: (tapPosition, latlng) {
+                          setState(() {
+                            _showPathButton = false;
+                            _mapPressPosition = null;
+                            _mapPressLatLng = null;
+                          });
+                        },
+                        onSecondaryTap: (tapPosition, point) {
+                          setState(() {
+                            _showPathButton = true;
+                            _mapPressPosition = tapPosition;
+                            _mapPressLatLng = point;
+                          });
+                        },
+                        onLongPress: (tapPosition, latlng) {
+                          setState(() {
+                            _showPathButton = true;
+                            _mapPressPosition = tapPosition;
+                            _mapPressLatLng = latlng;
+                          });
+                        },
+                        onPositionChanged: (position, hasGesture) {
+                          setState(() {
+                            _showPathButton = false;
+                            _mapPressPosition = null;
+                            _mapPressLatLng = null;
+                          });
+                        },
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName:
+                              'dev.wpi.sailbot.sailbot_telemetry',
+                        ),
+                        if (mapBounds != null && mapImageProvider != null)
+                          OverlayImageLayer(overlayImages: [
+                            OverlayImage(
+                                imageProvider: mapImageProvider!,
+                                bounds: mapBounds!)
+                          ]),
+                        PolylineLayer(polylines: _polylines),
+                        MarkerLayer(markers: _markers),
+                      ],
                     ),
-                  ),
-                  onTap: (tapPosition, latlng) {
-                    setState(() {
-                      _showPathButton = false;
-                      _mapPressPosition = null;
-                      _mapPressLatLng = null;
-                    });
-                  },
-                  onSecondaryTap: (tapPosition, point) {
-                    setState(() {
-                      _showPathButton = true;
-                      _mapPressPosition = tapPosition;
-                      _mapPressLatLng = point;
-                    });
-                  },
-                  onLongPress: (tapPosition, latlng) {
-                    setState(() {
-                      _showPathButton = true;
-                      _mapPressPosition = tapPosition;
-                      _mapPressLatLng = latlng;
-                    });
-                  },
-                  onPositionChanged: (position, hasGesture) {
-                    setState(() {
-                      _showPathButton = false;
-                      _mapPressPosition = null;
-                      _mapPressLatLng = null;
-                    });
-                  },
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
-                  ),
-                  if (mapBounds != null && mapImageProvider != null)
-                    OverlayImageLayer(overlayImages: [
-                      OverlayImage(
-                          imageProvider: mapImageProvider!, bounds: mapBounds!)
-                    ]),
-                  PolylineLayer(polylines: _polylines),
-                  MarkerLayer(markers: _markers),
-                ],
-              ),
             ),
           ]),
           Align(
-            alignment: Alignment.centerRight,
-            // centerPoint:
-            //     Offset(displayWidth(context), displayHeight(context) / 2),
-            //width: min(displayWidth(context) / 3, 200),
-            child: Container(
-              transform: Matrix4.translationValues(0, 120.0, 0),
-              width: 150,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey),
-              ),
-              child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                  const Text("Trim state:"),
-                  Text(
-                    _currentTrimState,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ]),
-                const Divider(
-                  color: Colors.grey, // Color of the divider
-                  thickness: 1, // Thickness of the divider line
-                  indent: 5, // Starting space of the line (left padding)
-                  endIndent: 5, // Ending space of the line (right padding)
-                ),
-                Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                  const Text("Auto mode:"),
-                  DropdownButton<String>(
-                    value: _selectedAction,
-                    dropdownColor: const Color.fromARGB(255, 255, 255, 255),
-                    onChanged: (String? newValue) {
+              alignment: Alignment.centerRight,
+              // centerPoint:
+              //     Offset(displayWidth(context), displayHeight(context) / 2),
+              //width: min(displayWidth(context) / 3, 200),
+              child: Stack(children: <Widget>[
+                Positioned(
+                  top: 50,
+                  child: MaterialButton(
+                    child: const Icon(Icons.camera_alt_rounded),
+                    onPressed: () {
                       setState(() {
-                        _selectedAction = newValue!;
+                        _showCameraFeed = !_showCameraFeed;
+                        if (_showCameraFeed) {
+                          networkComms?.startVideoStreaming();
+                        } else {
+                          networkComms?.cancelVideoStreaming();
+                        }
                       });
-                      setAutonomousMode(_selectedAction);
                     },
-                    items: _dropdownOptions.entries
-                        .map<DropdownMenuItem<String>>(
-                            (MapEntry<String, String> entry) {
-                      return DropdownMenuItem<String>(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      );
-                    }).toList(),
                   ),
-                ]),
-              ]),
-            ),
-          ),
+                ),
+                Container(
+                  transform: Matrix4.translationValues(0, 120.0, 0),
+                  width: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey),
+                  ),
+                  child:
+                      Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                      const Text("Trim state:"),
+                      Text(
+                        _currentTrimState,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ]),
+                    const Divider(
+                      color: Colors.grey,
+                      thickness: 1,
+                      indent: 5,
+                      endIndent: 5,
+                    ),
+                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                      const Text("Auto mode:"),
+                      DropdownButton<String>(
+                        value: _selectedAction,
+                        dropdownColor: const Color.fromARGB(255, 255, 255, 255),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _selectedAction = newValue!;
+                          });
+                          setAutonomousMode(_selectedAction);
+                        },
+                        items: _dropdownOptions.entries
+                            .map<DropdownMenuItem<String>>(
+                                (MapEntry<String, String> entry) {
+                          return DropdownMenuItem<String>(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          );
+                        }).toList(),
+                      ),
+                    ]),
+                  ]),
+                ),
+              ])),
           AlignPositioned(
             alignment: Alignment.bottomCenter,
             centerPoint: Offset(displayWidth(context) / 1.5, 0),
