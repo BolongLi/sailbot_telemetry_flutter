@@ -639,7 +639,7 @@ class _MapPageState extends State<MapPage> {
                                 );
                               }).toList(),
                             )))
-                    : Text(""),
+                    : const Text(""),
                 Positioned(
                   top: 50,
                   child: MaterialButton(
