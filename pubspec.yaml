@@ -103,7 +103,6 @@ flutter:
     - family: MyFlutterApp
       fonts:
         - asset: assets/fonts/u_turn.ttf
-        - asset: assets/fonts/buoy.ttf
   assets:
     - assets/arrow.png
     - assets/boat.png
