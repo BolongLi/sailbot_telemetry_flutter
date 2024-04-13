@@ -373,6 +373,13 @@ class _MapPageState extends State<MapPage> {
             point: LatLng(waypoint.point.latitude, waypoint.point.longitude),
             child: const Icon(Icons.star_border_purple500_rounded)));
       }
+      for (var buoy in boatState.buoyPositions) {
+        _markers.add(Marker(
+            point: LatLng(buoy.latitude, buoy.longitude),
+            height: 20,
+            width: 20,
+            child: Image.asset("assets/buoy.png")));
+      }
       _markers.add(Marker(
           point: _boatLatLng,
           height: 60,
