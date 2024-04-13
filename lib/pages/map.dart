@@ -545,7 +545,7 @@ class _MapPageState extends State<MapPage> {
               child: _showCameraFeed
                   ? Container(
                       width: MediaQuery.of(context).size.width,
-                      child: _currentImageWidget ??
+                      child: RepaintBoundary(child: _currentImageWidget) ??
                           const Center(child: CircularProgressIndicator()))
                   : FlutterMap(
                       options: MapOptions(

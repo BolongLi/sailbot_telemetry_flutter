@@ -17,6 +17,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  final MapPage page = const MapPage();
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MapPage(),
+      home: page,
     );
   }
 }
