@@ -35,6 +35,10 @@ class CircleDragWidget extends StatefulWidget {
   void setInteractive(interactive) {
     key.currentState?._updateInteractivity(interactive);
   }
+
+  void setAngle(double angle) {
+    key.currentState?._setAngle(angle);
+  }
 }
 
 class CircleDragWidgetState extends State<CircleDragWidget> {
@@ -77,6 +81,16 @@ class CircleDragWidgetState extends State<CircleDragWidget> {
               ),
       ),
     );
+  }
+
+  void _setAngle(double angle) {
+    // used for auto modes
+    widget.angle = angle; // Reset angle to zero
+    double circleX = widget.width / 2 + widget.lineLength * sin(widget.angle);
+    double circleY = widget.lineLength * cos(widget.angle);
+    setState(() {
+      position = Offset(circleX, circleY);
+    });
   }
 
   void _resetAngle() {

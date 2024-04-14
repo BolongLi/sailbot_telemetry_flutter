@@ -106,6 +106,7 @@ class _MapPageState extends State<MapPage> {
     'TRIMTAB': 'Auto Trimtab',
     'FULL': 'Full auto',
   };
+  bool _justChangedToManual = false;
 
   //callback for updating video feed when images load
   void _updateImageWidget() {
@@ -343,6 +344,11 @@ class _MapPageState extends State<MapPage> {
       _currentPath = boatState.currentPath;
       _currentWaypoints = boatState.currentWaypoints;
 
+      if (_selectedAutonomousMode == 'FULL' || _justChangedToManual) {
+        _justChangedToManual = false;
+        _rudderControlWidget
+            ?.setAngle(boatState.rudderPosition * (pi / 180) * -1);
+      }
       _currentTargetPosition = LatLng(boatState.currentTargetPoint.latitude,
           boatState.currentTargetPoint.longitude);
       switch (boatState.currentTrimState) {
@@ -644,6 +650,9 @@ class _MapPageState extends State<MapPage> {
                     dropdownColor: const Color.fromARGB(255, 255, 255, 255),
                     onChanged: (String? newValue) {
                       setState(() {
+                        if (_selectedAutonomousMode != 'NONE') {
+                          _justChangedToManual = true;
+                        }
                         _selectedAutonomousMode = newValue!;
                       });
                       setAutonomousMode(_selectedAutonomousMode);
