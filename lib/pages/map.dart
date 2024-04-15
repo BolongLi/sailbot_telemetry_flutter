@@ -445,6 +445,15 @@ class _MapPageState extends State<MapPage> {
         borderStrokeWidth: 6,
         borderColor: Colors.red.withOpacity(0.4),
       ));
+      if (boatState.hasCurrentPathSegment) {
+        dev.log("Has current path segment!");
+        LatLng start = LatLng(boatState.currentPathSegment_33.start.latitude,
+            boatState.currentPathSegment_33.start.longitude);
+        LatLng end = LatLng(boatState.currentPathSegment_33.end.latitude,
+            boatState.currentPathSegment_33.end.longitude);
+        _polylines.add(Polyline(
+            points: [start, end], strokeWidth: 5, color: Colors.green));
+      }
 
       var previousBoatPoints = boatState.previousPositions.points;
       var previousPoints = <LatLng>[];
