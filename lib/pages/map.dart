@@ -919,6 +919,8 @@ class _MapPageState extends State<MapPage> {
       dev.log('auto trimtab');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_TRIMTAB);
       _trimTabControlWidget?.setInteractive(false);
+      _autoBallast = true;
+      _rudderControlWidget?.setInteractive(true);
     } else if (selectedMode == 'FULL') {
       dev.log('Full auto');
       networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
