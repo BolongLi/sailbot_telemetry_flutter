@@ -406,6 +406,21 @@ class _MapPageState extends State<MapPage> {
             Icons.star_border_purple500_rounded,
             color: Colors.red,
           )));
+      if (boatState.hasTargetHeading) {
+        _markers.add(Marker(
+            point: _boatLatLng,
+            height: 80,
+            width: 80,
+            child: Transform.rotate(
+                angle: boatState.targetHeading_35 * pi / 180,
+                child: Transform.scale(
+                    scaleY: 2,
+                    scaleX: 1.5,
+                    child: const Icon(
+                      Icons.arrow_upward,
+                      color: Colors.purple,
+                    )))));
+      }
       //path lines
       _polylines.clear();
       var boatPoints = boatState.currentPath.points;
