@@ -426,9 +426,9 @@ class _MapPageState extends State<MapPage> {
       var boatPoints = boatState.currentPath.points;
       dev.log("Path has ${boatPoints.length} points");
       var points = <LatLng>[];
-      if (boatPoints.isNotEmpty) {
-        points.add(_boatLatLng);
-      }
+      // if (boatPoints.isNotEmpty) {
+      //   points.add(_boatLatLng);
+      // }
       for (int i = 0; i < boatPoints.length; i++) {
         var point = boatPoints[i];
         var latlng = LatLng(point.latitude, point.longitude);
