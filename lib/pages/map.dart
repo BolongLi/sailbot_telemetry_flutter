@@ -164,6 +164,9 @@ class _MapPageState extends State<MapPage> {
   ImageProvider? mapImageProvider;
   LatLngBounds? mapBounds;
 
+  String lastRudderKPString = "0.1";
+  String lastVFForwardMagnitudeString = "1.0";
+
   @override
   void initState() {
     super.initState();
@@ -577,12 +580,33 @@ class _MapPageState extends State<MapPage> {
               subtitle: TextField(
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(hintText: "1.0"),
+                decoration:
+                    InputDecoration(hintText: lastVFForwardMagnitudeString),
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
                 ],
                 onSubmitted: ((String value) {
+                  setState(() {
+                    lastVFForwardMagnitudeString = value;
+                  });
                   networkComms?.setVFForwardMagnitude(double.parse(value));
+                }),
+              ),
+            ),
+            ListTile(
+              title: const Text("Rudder KP"),
+              subtitle: TextField(
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(hintText: lastRudderKPString),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                ],
+                onSubmitted: ((String value) {
+                  setState(() {
+                    lastRudderKPString = value;
+                  });
+                  networkComms?.setRudderKP(double.parse(value));
                 }),
               ),
             ),

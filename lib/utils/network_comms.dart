@@ -17,6 +17,7 @@ class NetworkComms {
   ExecuteAddWaypointCommandServiceClient? _addWaypointCommandServiceClient;
   ExecuteSetVFForwardMagnitudeCommandServiceClient?
       _setVFForwardMagnitudeCommandServiceClient;
+  ExecuteSetRudderKPCommandServiceClient? _setRudderKPCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
@@ -113,6 +114,8 @@ class NetworkComms {
         ExecuteAddWaypointCommandServiceClient(channel!);
     _setVFForwardMagnitudeCommandServiceClient =
         ExecuteSetVFForwardMagnitudeCommandServiceClient(channel!);
+    _setRudderKPCommandServiceClient =
+        ExecuteSetRudderKPCommandServiceClient(channel!);
     _sendBoatStateStub = SendBoatStateServiceClient(channel!);
     _streamBoatStateStub = StreamBoatStateServiceClient(channel!);
     _getMapStub = GetMapServiceClient(channel!);
@@ -251,6 +254,18 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log(
           "Set VF forward magnitude command returned with response: $status",
+          name: 'network');
+    });
+  }
+
+  setRudderKP(double kp) {
+    SetRudderKPCommand command = SetRudderKPCommand();
+    command.kp = kp;
+    _setRudderKPCommandServiceClient
+        ?.executeSetRudderKPCommand(command)
+        .then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Set rudder KP command returned with response: $status",
           name: 'network');
     });
   }
