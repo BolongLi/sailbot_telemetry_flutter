@@ -575,9 +575,12 @@ class _MapPageState extends State<MapPage> {
             ListTile(
               title: const Text("VF forward magnitude"),
               subtitle: TextField(
-                keyboardType: TextInputType.number,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(hintText: "1.0"),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                ],
                 onSubmitted: ((String value) {
                   networkComms?.setVFForwardMagnitude(double.parse(value));
                 }),

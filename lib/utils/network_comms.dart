@@ -246,7 +246,7 @@ class NetworkComms {
     SetVFForwardMagnitudeCommand command = SetVFForwardMagnitudeCommand();
     command.magnitude = magnitude;
     _setVFForwardMagnitudeCommandServiceClient
-        ?.executeSetVFForwardMagnitude(command)
+        ?.executeSetVFForwardMagnitudeCommand(command)
         .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log(
