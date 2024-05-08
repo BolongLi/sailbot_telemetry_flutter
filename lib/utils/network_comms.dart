@@ -15,6 +15,8 @@ class NetworkComms {
       _autonomousModeCommandServiceClient;
   ExecuteSetWaypointsCommandServiceClient? _setWaypointsCommandServiceClient;
   ExecuteAddWaypointCommandServiceClient? _addWaypointCommandServiceClient;
+  ExecuteSetVFForwardMagnitudeCommandServiceClient?
+      _setVFForwardMagnitudeCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
@@ -109,6 +111,8 @@ class NetworkComms {
         ExecuteSetWaypointsCommandServiceClient(channel!);
     _addWaypointCommandServiceClient =
         ExecuteAddWaypointCommandServiceClient(channel!);
+    _setVFForwardMagnitudeCommandServiceClient =
+        ExecuteSetVFForwardMagnitudeCommandServiceClient(channel!);
     _sendBoatStateStub = SendBoatStateServiceClient(channel!);
     _streamBoatStateStub = StreamBoatStateServiceClient(channel!);
     _getMapStub = GetMapServiceClient(channel!);
@@ -234,6 +238,19 @@ class NetworkComms {
         .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Autonomous mode control command returned with response: $status",
+          name: 'network');
+    });
+  }
+
+  setVFForwardMagnitude(double magnitude) {
+    SetVFForwardMagnitudeCommand command = SetVFForwardMagnitudeCommand();
+    command.magnitude = magnitude;
+    _setVFForwardMagnitudeCommandServiceClient
+        ?.executeSetVFForwardMagnitude(command)
+        .then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log(
+          "Set VF forward magnitude command returned with response: $status",
           name: 'network');
     });
   }

@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart'
     as boat_state;
@@ -571,6 +572,17 @@ class _MapPageState extends State<MapPage> {
                 )),
               ]),
             ),
+            ListTile(
+              title: const Text("VF forward magnitude"),
+              subtitle: TextField(
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(hintText: "1.0"),
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onSubmitted: ((String value) {
+                  networkComms?.setVFForwardMagnitude(double.parse(value));
+                }),
+              ),
+            ),
           ],
         ),
       ),
@@ -807,7 +819,7 @@ class _MapPageState extends State<MapPage> {
           Align(
             alignment: Alignment.topRight,
             child: IconButton(
-              icon: const Icon(Icons.wifi),
+              icon: const Icon(Icons.settings),
               color: _connectionIconColor,
               onPressed: () {
                 _scaffoldState.currentState?.openEndDrawer();
