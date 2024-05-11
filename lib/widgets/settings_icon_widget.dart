@@ -19,7 +19,6 @@ class ConnectionNotifier extends StateNotifier<Color> {
   final Color _colorError = Colors.red;
   final Color _connectionColorOK = Colors.green;
   NetworkComms? _networkComms;
-  Server? _server;
   late StateNotifierProviderRef _ref;
   late bool _cameraActive;
 
@@ -33,9 +32,6 @@ class ConnectionNotifier extends StateNotifier<Color> {
     });
     ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) { 
       _networkComms = networkComms;
-    });
-    ref.listen<Server?>(selectedServerProvider, (_, server) { 
-      _server = server;
     });
     ref.listen<bool>(cameraToggleProvider, (_, cameraActive) { 
       _cameraActive = cameraActive;
