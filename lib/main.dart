@@ -5,7 +5,9 @@ import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/nodes_drawer.dart';
+import 'package:sailbot_telemetry_flutter/widgets/settings_drawer.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer_icon_widget.dart';
+import 'package:sailbot_telemetry_flutter/widgets/settings_icon_widget.dart';
 import 'dart:developer' as dev;
 
 void main() async {
@@ -20,8 +22,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watching the server list provider here
-    final serverListAsyncValue = ref.watch(serverListProvider);
 
     return MaterialApp(
       title: "Sailbot Telemetry",
@@ -31,12 +31,16 @@ class MyApp extends ConsumerWidget {
       ),
       home: Scaffold(
         drawer: const NodesDrawer(),
+        endDrawer: const SettingsDrawer(),
         key: _scaffoldState,
         body: Stack(
         children: [
           const Flex(direction: Axis.horizontal, children: <Widget>[
             Flexible( child: MapCameraWidget()),]),
-            DrawerIconWidget(_scaffoldState)])
+            DrawerIconWidget(_scaffoldState),
+            Align(
+            alignment: Alignment.topRight,
+            child: SettingsIconWidget(_scaffoldState))])
       ),
     );
   }
