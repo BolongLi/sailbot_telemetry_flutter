@@ -1,38 +1,26 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:sailbot_telemetry_flutter/pages/map.dart';
+import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 
-Widget _buildMenuItem(
-  BuildContext context,
-  Widget title,
-  String routeName,
-  String currentRoute, {
-  Widget? icon,
-}) {
-  final isSelected = routeName == currentRoute;
+class NodesDrawer extends ConsumerWidget {
+  const NodesDrawer({super.key});
 
-  return ListTile(
-    title: title,
-    leading: icon,
-    selected: isSelected,
-    onTap: () {
-      if (isSelected) {
-        Navigator.pop(context);
-      } else {
-        Navigator.pushReplacementNamed(context, routeName);
-      }
-    },
-  );
-}
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watchers
+    final networkComms = ref.watch(networkCommsProvider);
 
-Drawer buildDrawer(
-    BuildContext context,
-    String currentRoute,
-    List<NodeInfo> nodeStates,
-    Function nodeRestartCallback,
-    Function clearPathCallback) {
-  var nodeStatusWidgets = <Widget>[];
+    void clearPath() {
+      var newWaypoints = WaypointPath();
+      networkComms?.setWaypoints(newWaypoints);
+    }
+    final boatState = ref.watch(boatStateProvider);
+    
+    final nodeStates = boatState.nodeStates;
+
+    var nodeStatusWidgets = <Widget>[];
   const Color colorUnknown = Color.fromARGB(255, 255, 255, 255);
   const Color colorConfiguring = Color.fromARGB(255, 162, 50, 168);
   const Color colorInactive = Color.fromARGB(255, 46, 76, 209);
@@ -77,8 +65,8 @@ Drawer buildDrawer(
             nodeInfo.name,
             textAlign: TextAlign.center,
           ),
-          onSelected: (value) {
-            nodeRestartCallback(value);
+          onSelected: (String value) {
+            networkComms?.restartNode(value);
           },
         ),
       ),
@@ -92,19 +80,6 @@ Drawer buildDrawer(
         child: Row(
           children: <Widget>[
             Expanded(
-              child: ListView(
-                children: <Widget>[
-                  _buildMenuItem(
-                    context,
-                    const Text('Map'),
-                    MapPage.route,
-                    currentRoute,
-                    icon: const Icon(Icons.home),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
                 child: ListView(
               children: nodeStatusWidgets,
             )),
@@ -113,11 +88,35 @@ Drawer buildDrawer(
       ),
       FloatingActionButton(
         onPressed: () {
-          _showclearPathFormDialog(context, clearPathCallback);
+          _showclearPathFormDialog(context, clearPath);
         },
         child: const Text(textAlign: TextAlign.center, "Clear path"),
       )
     ]),
+  );
+  }
+}
+
+Widget _buildMenuItem(
+  BuildContext context,
+  Widget title,
+  String routeName,
+  String currentRoute, {
+  Widget? icon,
+}) {
+  final isSelected = routeName == currentRoute;
+
+  return ListTile(
+    title: title,
+    leading: icon,
+    selected: isSelected,
+    onTap: () {
+      if (isSelected) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacementNamed(context, routeName);
+      }
+    },
   );
 }
 

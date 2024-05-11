@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:github/github.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:developer' as dev;
 
 class Server {
@@ -28,6 +29,7 @@ Future<Map<String, dynamic>?> fetchJsonFromRepo(
 }
 
 Future<List<Server>> getServers() async {
+  dev.log("Getting servers...");
   final github = GitHub(auth: const Authentication.anonymous());
 
   var file = await fetchJsonFromRepo(
@@ -37,3 +39,7 @@ Future<List<Server>> getServers() async {
 
   return serverList;
 }
+
+final serverListProvider = FutureProvider<List<Server>>((ref) async {
+  return getServers();
+});

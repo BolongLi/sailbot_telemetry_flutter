@@ -1,34 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:sailbot_telemetry_flutter/pages/map.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
+import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
+import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
+import 'package:sailbot_telemetry_flutter/widgets/nodes_drawer.dart';
+import 'package:sailbot_telemetry_flutter/widgets/drawer_icon_widget.dart';
+import 'dart:developer' as dev;
 
 void main() async {
-  // final receivePort = ReceivePort();
-  // log("about to launch isolate");
-  // Isolate isolate = await Isolate.spawn(SailbotComms.sailbotComms, receivePort);
-  // log("listening to data");
-  // receivePort.listen((data) {
-  //   // Handle the data/message sent from the secondary isolate
-  //   // For example, you can update your app's state here
-  // });
-  // log("launching app");
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+final GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
+
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
-  final MapPage page = const MapPage();
-  // This widget is the root of your application.
+
   @override
-  Widget build(BuildContext context) {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watching the server list provider here
+    final serverListAsyncValue = ref.watch(serverListProvider);
+
     return MaterialApp(
-      title: 'SailbotTelemetry',
+      title: "Sailbot Telemetry",
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: page,
+      home: Scaffold(
+        drawer: const NodesDrawer(),
+        key: _scaffoldState,
+        body: Stack(
+        children: [
+          const Flex(direction: Axis.horizontal, children: <Widget>[
+            Flexible( child: MapCameraWidget()),]),
+            DrawerIconWidget(_scaffoldState)])
+      ),
+    );
+  }
+}
+
+class NetworkCommsConsumerWidget extends ConsumerWidget {
+  const NetworkCommsConsumerWidget({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final networkComms = ref.watch(networkCommsProvider);
+
+    return Scaffold(
+      body: Center(
+        child: Text(networkComms != null ? 'NetworkComms is initialized' : 'NetworkComms is null'),
+      ),
     );
   }
 }

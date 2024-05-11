@@ -1,10 +1,64 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:grpc/grpc.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/node_restart.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/video.pbgrpc.dart';
 import 'dart:developer' as dev; //log() conflicts with math
+
+import 'package:sailbot_telemetry_flutter/utils/github_helper.dart' as gh;
+
+final boatStateProvider = StateNotifierProvider<BoatStateNotifier, BoatState>((ref) {
+  return BoatStateNotifier();
+});
+
+final mapImageProvider = StateNotifierProvider<MapImageNotifier, MapResponse>((ref) {
+  return MapImageNotifier();
+});
+
+final videoFrameProvider = StateNotifierProvider<VideoFrameNotifier, VideoFrame>((ref) {
+  return VideoFrameNotifier();
+});
+
+class BoatStateNotifier extends StateNotifier<BoatState> {
+  BoatStateNotifier() : super(BoatState());
+
+  void update(BoatState newState) {
+    state = newState;
+  }
+}
+
+class MapImageNotifier extends StateNotifier<MapResponse> {
+  MapImageNotifier() : super(MapResponse());
+
+  void update(MapResponse newImage) {
+    state = newImage;
+  }
+}
+
+class VideoFrameNotifier extends StateNotifier<VideoFrame> {
+  VideoFrameNotifier() : super(VideoFrame());
+
+  void update(VideoFrame newFrame) {
+    state = newFrame;
+  }
+}
+
+final selectedServerProvider = StateProvider<gh.Server?>((ref) => null);
+
+final networkCommsProvider = Provider<NetworkComms?>((ref) {
+  final selectedServer = ref.watch(selectedServerProvider);
+  dev.log("Watching selectedServerProvider: ${selectedServer?.address}");
+  if (selectedServer != null) {
+    dev.log("Recreating NetworkComms with server: ${selectedServer.address}");
+    return NetworkComms(selectedServer.address, ref);
+  } else {
+    dev.log("Selected server is null, returning null");
+  }
+  return null; // Return null until a server is selected
+});
 
 class NetworkComms {
   String? server;
@@ -24,17 +78,15 @@ class NetworkComms {
   RestartNodeServiceClient? _restartNodeStub;
   VideoStreamerClient? _videoStreamerStub;
   StreamSubscription<VideoFrame>? _streamSubscription;
-  final Function _boatStateCallback;
-  final Function _mapCallback;
-  final Function _videoFrameCallback;
   String _currentCameraSource = 'COLOR';
 
   Timer? _timer;
 
   ClientChannel? channel;
 
-  NetworkComms(this._boatStateCallback, this._mapCallback,
-      this._videoFrameCallback, this.server) {
+  final ProviderRef ref;
+
+  NetworkComms(this.server, this.ref) {
     _createClient();
     dev.log('created client to boat');
   }
@@ -47,7 +99,7 @@ class NetworkComms {
   void _initializeBoatStateStream() {
     final call = _streamBoatStateStub!.streamBoatState(BoatStateRequest());
     call.listen((BoatState response) {
-      _boatStateCallback(response);
+      ref.read(boatStateProvider.notifier).update(response);
     }, onError: (e) {
       dev.log("Error: $e", name: "network");
       // Do not attempt to reconnect both here and in onDone, it creates exponential callbacks
@@ -88,7 +140,7 @@ class NetworkComms {
             dev.log(
                 "got map response: ${response.north}, ${response.south}, ${response.east}, ${response.west}");
             if (response.north != 0 && response.south != 0) {
-              _mapCallback(response);
+              ref.read(mapImageProvider.notifier).update(response);
             }
           });
 
@@ -135,7 +187,7 @@ class NetworkComms {
     req.videoSource = _currentCameraSource;
     final call = _videoStreamerStub!.streamVideo(req);
     _streamSubscription = call.listen((VideoFrame response) {
-      _videoFrameCallback(response);
+      ref.read(videoFrameProvider.notifier).update(response);
     }, onError: (e) {
       dev.log("Error: $e", name: "network");
     }, onDone: () {
