@@ -10,7 +10,7 @@ import 'dart:typed_data';
 class MapState {
   final bool showPathButton;
   final TapPosition?
-      mapPressPosition; // Define TapPosition according to your data type
+      mapPressPosition;
   final LatLng? mapPressLatLng;
 
   MapState(
