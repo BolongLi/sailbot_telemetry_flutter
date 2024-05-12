@@ -13,6 +13,8 @@ import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
 import 'package:sailbot_telemetry_flutter/widgets/autonomous_mode_selector.dart';
 import 'package:sailbot_telemetry_flutter/widgets/trim_state_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/ballast_slider.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
+
 import 'dart:developer' as dev;
 
 void main() async {
@@ -54,6 +56,33 @@ class MyApp extends ConsumerWidget {
       callback: _updateRudderAngle,
       key: rudderKey,
     );
+
+    ref.listen<String>(autonomousModeProvider, (_, selectedMode) { 
+      if (selectedMode == 'NONE') {
+      dev.log('Manual control');
+      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_NONE);
+
+      trimTabControlWidget.setInteractive(true);
+      rudderControlWidget.setInteractive(true);
+    } else if (selectedMode == 'BALLAST') {
+      dev.log('Auto ballast');
+      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_BALLAST);
+
+      trimTabControlWidget.setInteractive(true);
+      rudderControlWidget.setInteractive(true);
+    } else if (selectedMode == 'TRIMTAB') {
+      dev.log('auto trimtab');
+      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_TRIMTAB);
+      trimTabControlWidget.setInteractive(false);
+      rudderControlWidget.setInteractive(true);
+    } else if (selectedMode == 'FULL') {
+      dev.log('Full auto');
+      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
+
+      trimTabControlWidget.setInteractive(false);
+      rudderControlWidget.setInteractive(false);
+    }
+    });
 
     return MaterialApp(
       title: "Sailbot Telemetry",
@@ -129,22 +158,5 @@ class MyApp extends ConsumerWidget {
 
   _updateTrimtabAngle(double angle) {
     _networkComms?.setTrimtabAngle(angle);
-  }
-}
-
-class NetworkCommsConsumerWidget extends ConsumerWidget {
-  const NetworkCommsConsumerWidget({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final networkComms = ref.watch(networkCommsProvider);
-
-    return Scaffold(
-      body: Center(
-        child: Text(networkComms != null
-            ? 'NetworkComms is initialized'
-            : 'NetworkComms is null'),
-      ),
-    );
   }
 }

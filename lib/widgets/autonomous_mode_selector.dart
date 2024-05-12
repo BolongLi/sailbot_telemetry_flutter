@@ -5,8 +5,6 @@ import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 
 final autonomousModeProvider = StateProvider<String>((ref) => 'NONE');
 
-enum AutonomousMode { none, ballast, trimtab, full }
-
 class AutonomousModeSelector extends ConsumerWidget {
   AutonomousModeSelector({super.key});
 
