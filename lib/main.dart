@@ -10,6 +10,9 @@ import 'package:sailbot_telemetry_flutter/widgets/settings_drawer.dart';
 import 'package:sailbot_telemetry_flutter/widgets/drawer_icon_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/settings_icon_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
+import 'package:sailbot_telemetry_flutter/widgets/autonomous_mode_selector.dart';
+import 'package:sailbot_telemetry_flutter/widgets/trim_state_widget.dart';
+import 'package:sailbot_telemetry_flutter/widgets/ballast_slider.dart';
 import 'dart:developer' as dev;
 
 void main() async {
@@ -59,38 +62,67 @@ class MyApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       home: Scaffold(
-        drawer: const NodesDrawer(),
-        endDrawer: const SettingsDrawer(),
-        key: _scaffoldState,
-        body: Stack(
-        children: [
-          const Flex(direction: Axis.horizontal, children: <Widget>[
-            Flexible( child: MapCameraWidget()),]),
+          drawer: const NodesDrawer(),
+          endDrawer: const SettingsDrawer(),
+          key: _scaffoldState,
+          body: Stack(children: [
+            const Flex(direction: Axis.horizontal, children: <Widget>[
+              Flexible(child: MapCameraWidget()),
+            ]),
             DrawerIconWidget(_scaffoldState),
             Align(
-            alignment: Alignment.topRight,
-            child: SettingsIconWidget(_scaffoldState)),
+                alignment: Alignment.topRight,
+                child: SettingsIconWidget(_scaffoldState)),
             Transform.translate(
-            offset: Offset(displayWidth(context) / 9, -40),
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              // centerPoint:
-              //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-              child: rudderControlWidget,
+              offset: Offset(displayWidth(context) / 9, -40),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                // centerPoint:
+                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+                child: rudderControlWidget,
+              ),
+            ),
+            Transform.translate(
+              offset: Offset(-displayWidth(context) / 9, -40),
+              child: Align(
+                alignment: Alignment.bottomRight,
+                // centerPoint:
+                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+                child: trimTabControlWidget,
+              ),
+            ),
+            Transform.translate(
+                offset: Offset(0, displayHeight(context) / 2 - 180),
+                child: const Align(
+                    //alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                        height: 40, width: 300, child: BallastSlider()))),
+            Align(
+            alignment: Alignment.centerRight,
+            child: Container(
+              transform: Matrix4.translationValues(0, 120.0, 0),
+              width: 150,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey),
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                const TrimStateWidget(),
+                const Divider(
+                  color: Colors.grey,
+                  thickness: 1,
+                  indent: 5,
+                  endIndent: 5,
+                ),
+                AutonomousModeSelector(),
+              ]),
             ),
           ),
-          Transform.translate(
-            offset: Offset(-displayWidth(context) / 9, -40),
-            child: Align(
-              alignment: Alignment.bottomRight,
-              // centerPoint:
-              //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-              child: trimTabControlWidget,
-            ),
-          ),])
-      ),
+          ])),
     );
   }
+
   _updateRudderAngle(double angle) {
     _networkComms?.setRudderAngle(angle);
   }
@@ -109,7 +141,9 @@ class NetworkCommsConsumerWidget extends ConsumerWidget {
 
     return Scaffold(
       body: Center(
-        child: Text(networkComms != null ? 'NetworkComms is initialized' : 'NetworkComms is null'),
+        child: Text(networkComms != null
+            ? 'NetworkComms is initialized'
+            : 'NetworkComms is null'),
       ),
     );
   }
