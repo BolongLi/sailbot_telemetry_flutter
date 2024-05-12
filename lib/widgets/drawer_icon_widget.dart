@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 
-
 class DrawerIconWidget extends ConsumerWidget {
   const DrawerIconWidget(this._scaffoldState, {super.key});
 
@@ -40,11 +39,11 @@ class DrawerIconWidget extends ConsumerWidget {
     }
 
     return IconButton(
-            icon: const Icon(Icons.menu),
-            color: menuIconColor,
-            onPressed: () {
-              _scaffoldState.currentState?.openDrawer();
-            },
-          );
+      icon: const Icon(Icons.menu),
+      color: menuIconColor,
+      onPressed: () {
+        _scaffoldState.currentState?.openDrawer();
+      },
+    );
   }
 }

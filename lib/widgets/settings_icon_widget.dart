@@ -8,8 +8,8 @@ import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 
-
-final connectionProvider = StateNotifierProvider<ConnectionNotifier, Color>((ref) {
+final connectionProvider =
+    StateNotifierProvider<ConnectionNotifier, Color>((ref) {
   return ConnectionNotifier(ref);
 });
 
@@ -23,17 +23,18 @@ class ConnectionNotifier extends StateNotifier<Color> {
   late bool _cameraActive;
 
   ConnectionNotifier(StateNotifierProviderRef ref) : super(Colors.red) {
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _checkConnection());
+    _timer =
+        Timer.periodic(const Duration(seconds: 1), (_) => _checkConnection());
     _ref = ref;
 
     // Listen to updates on the boatStateProvider
     ref.listen<BoatState>(boatStateProvider, (_, __) {
       updateLastConnectionTime();
     });
-    ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) { 
+    ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
       _networkComms = networkComms;
     });
-    ref.listen<bool>(cameraToggleProvider, (_, cameraActive) { 
+    ref.listen<bool>(cameraToggleProvider, (_, cameraActive) {
       _cameraActive = cameraActive;
     });
   }
@@ -43,8 +44,9 @@ class ConnectionNotifier extends StateNotifier<Color> {
     if (currentTime.millisecondsSinceEpoch - _lastConnectionTime > 3000) {
       state = _colorError;
       dev.log("Resetting comms");
-      _ref.read(selectedServerProvider.notifier).state = _ref.read(selectedServerProvider);
-      if(_cameraActive){
+      _ref.read(selectedServerProvider.notifier).state =
+          _ref.read(selectedServerProvider);
+      if (_cameraActive) {
         _networkComms?.startVideoStreaming();
       }
     } else {

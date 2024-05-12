@@ -57,31 +57,33 @@ class MyApp extends ConsumerWidget {
       key: rudderKey,
     );
 
-    ref.listen<String>(autonomousModeProvider, (_, selectedMode) { 
+    ref.listen<String>(autonomousModeProvider, (_, selectedMode) {
       if (selectedMode == 'NONE') {
-      dev.log('Manual control');
-      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_NONE);
+        dev.log('Manual control');
+        _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_NONE);
 
-      trimTabControlWidget.setInteractive(true);
-      rudderControlWidget.setInteractive(true);
-    } else if (selectedMode == 'BALLAST') {
-      dev.log('Auto ballast');
-      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_BALLAST);
+        trimTabControlWidget.setInteractive(true);
+        rudderControlWidget.setInteractive(true);
+      } else if (selectedMode == 'BALLAST') {
+        dev.log('Auto ballast');
+        _networkComms
+            ?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_BALLAST);
 
-      trimTabControlWidget.setInteractive(true);
-      rudderControlWidget.setInteractive(true);
-    } else if (selectedMode == 'TRIMTAB') {
-      dev.log('auto trimtab');
-      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_TRIMTAB);
-      trimTabControlWidget.setInteractive(false);
-      rudderControlWidget.setInteractive(true);
-    } else if (selectedMode == 'FULL') {
-      dev.log('Full auto');
-      _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
+        trimTabControlWidget.setInteractive(true);
+        rudderControlWidget.setInteractive(true);
+      } else if (selectedMode == 'TRIMTAB') {
+        dev.log('auto trimtab');
+        _networkComms
+            ?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_TRIMTAB);
+        trimTabControlWidget.setInteractive(false);
+        rudderControlWidget.setInteractive(true);
+      } else if (selectedMode == 'FULL') {
+        dev.log('Full auto');
+        _networkComms?.setAutonomousMode(AutonomousMode.AUTONOMOUS_MODE_FULL);
 
-      trimTabControlWidget.setInteractive(false);
-      rudderControlWidget.setInteractive(false);
-    }
+        trimTabControlWidget.setInteractive(false);
+        rudderControlWidget.setInteractive(false);
+      }
     });
 
     return MaterialApp(
@@ -127,27 +129,28 @@ class MyApp extends ConsumerWidget {
                     child: SizedBox(
                         height: 40, width: 300, child: BallastSlider()))),
             Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              transform: Matrix4.translationValues(0, 120.0, 0),
-              width: 150,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey),
-              ),
-              child: Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                const TrimStateWidget(),
-                const Divider(
-                  color: Colors.grey,
-                  thickness: 1,
-                  indent: 5,
-                  endIndent: 5,
+              alignment: Alignment.centerRight,
+              child: Container(
+                transform: Matrix4.translationValues(0, 120.0, 0),
+                width: 150,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(1),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey),
                 ),
-                AutonomousModeSelector(),
-              ]),
+                child:
+                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                  const TrimStateWidget(),
+                  const Divider(
+                    color: Colors.grey,
+                    thickness: 1,
+                    indent: 5,
+                    endIndent: 5,
+                  ),
+                  AutonomousModeSelector(),
+                ]),
+              ),
             ),
-          ),
           ])),
     );
   }

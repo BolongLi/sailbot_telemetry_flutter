@@ -16,7 +16,8 @@ class CameraView extends ConsumerWidget {
       return Image.memory(
         Uint8List.fromList(videoFrame.data),
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => const Center(child: Text('Failed to load image')),
+        errorBuilder: (context, error, stackTrace) =>
+            const Center(child: Text('Failed to load image')),
       );
     } else {
       return const Center(child: Text('No Video Data'));
