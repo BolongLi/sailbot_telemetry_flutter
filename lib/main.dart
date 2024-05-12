@@ -15,6 +15,7 @@ import 'package:sailbot_telemetry_flutter/widgets/trim_state_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/ballast_slider.dart';
 import 'package:sailbot_telemetry_flutter/widgets/path_point.dart';
 import 'package:sailbot_telemetry_flutter/widgets/path_buttons.dart';
+import 'package:sailbot_telemetry_flutter/widgets/video_source_select.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 
 import 'dart:developer' as dev;
@@ -106,7 +107,7 @@ class MyApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       home: Scaffold(
-          // drawer: const NodesDrawer(),
+          drawer: const NodesDrawer(),
           endDrawer: const SettingsDrawer(),
           key: _scaffoldState,
           body: Stack(children: [
@@ -170,7 +171,18 @@ class MyApp extends ConsumerWidget {
             ),
             const PathPoint(),
             PathButtons(),
-          ])),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+              transform: Matrix4.translationValues(0, -60.0, 0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey),
+              ),
+              child: VideoSourceSelect(),
+            ),
+    )])),
     );
   }
 

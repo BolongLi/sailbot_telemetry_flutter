@@ -159,7 +159,6 @@ class BoatStateView extends ConsumerWidget {
       borderColor: Colors.red.withOpacity(0.4),
     ));
     if (boatState.hasCurrentPathSegment) {
-      dev.log("Has current path segment!");
       LatLng start = LatLng(boatState.currentPathSegment_33.start.latitude,
           boatState.currentPathSegment_33.start.longitude);
       LatLng end = LatLng(boatState.currentPathSegment_33.end.latitude,
