@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:github/github.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:developer' as dev;
+import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 
 class Server {
   String name = "";
@@ -9,6 +11,15 @@ class Server {
   factory Server.fromJson(Map<String, dynamic> json) {
     return Server(name: json['name'], address: json['address']);
   }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Server &&
+          runtimeType == other.runtimeType &&
+          address == other.address;
+
+  @override
+  int get hashCode => address.hashCode;
 }
 
 Future<RepositoryContents> listFilesInRepo(
@@ -28,6 +39,7 @@ Future<Map<String, dynamic>?> fetchJsonFromRepo(
 }
 
 Future<List<Server>> getServers() async {
+  dev.log("Getting servers...");
   final github = GitHub(auth: const Authentication.anonymous());
 
   var file = await fetchJsonFromRepo(
@@ -37,3 +49,8 @@ Future<List<Server>> getServers() async {
 
   return serverList;
 }
+
+final serverListProvider = FutureProvider<List<Server>>((ref) async {
+  final serverListAsyncValue = getServers();
+  return serverListAsyncValue;
+});
