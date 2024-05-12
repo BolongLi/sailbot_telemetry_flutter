@@ -56,22 +56,14 @@ final mapStateProvider =
   return MapStateNotifier();
 });
 
-class MapView extends ConsumerWidget {
-  const MapView({super.key});
+class BoatStateView extends ConsumerWidget {
+  const BoatStateView({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watchers
-    final map = ref.watch(mapImageProvider);
     final boatState = ref.watch(boatStateProvider);
 
-    final mapBounds = LatLngBounds(
-      LatLng(map.north, map.west),
-      LatLng(map.south, map.east),
-    );
-    Uint8List lst = Uint8List.fromList(map.imageData);
-    final mapImage = MemoryImage(lst);
-
+    // Generate markers and polylines based on the boat state
     final polylines = <Polyline>[];
     final markers = <Marker>[];
     final heading = boatState.currentHeading;
@@ -191,6 +183,53 @@ class MapView extends ConsumerWidget {
       isDotted: true,
     ));
 
+    return Stack(
+      children: [
+        PolylineLayer(polylines: polylines),
+        MarkerLayer(markers: markers),
+      ],
+    );
+  }
+}
+
+final memoryImageProvider = StateProvider<MemoryImage?>((ref) => null);
+
+class MapImageView extends ConsumerWidget {
+  const MapImageView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final map = ref.watch(mapImageProvider);
+
+    // Create or update the memory image only when the map image data changes
+    ref.watch(memoryImageProvider.notifier).update((state) {
+      return MemoryImage(Uint8List.fromList(map.imageData));
+    });
+
+    return Consumer(
+      builder: (context, ref, child) {
+        final image = ref.watch(memoryImageProvider);
+        if (image != null) {
+          final mapBounds = LatLngBounds(
+            LatLng(map.north, map.west),
+            LatLng(map.south, map.east),
+          );
+
+          return OverlayImageLayer(overlayImages: [
+            OverlayImage(imageProvider: image, bounds: mapBounds)
+          ]);
+        }
+        return const SizedBox();
+      },
+    );
+  }
+}
+
+class MapView extends ConsumerWidget {
+  const MapView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return FlutterMap(
       options: MapOptions(
         initialCenter: const LatLng(42.277062, -71.756299),
@@ -221,11 +260,8 @@ class MapView extends ConsumerWidget {
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
           userAgentPackageName: 'dev.wpi.sailbot.sailbot_telemetry',
         ),
-        OverlayImageLayer(overlayImages: [
-          OverlayImage(imageProvider: mapImage, bounds: mapBounds!)
-        ]),
-        PolylineLayer(polylines: polylines),
-        MarkerLayer(markers: markers),
+        const MapImageView(),
+        const BoatStateView(),
       ],
     );
   }
