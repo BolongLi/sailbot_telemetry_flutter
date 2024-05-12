@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:github/github.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:developer' as dev;
+import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 
 class Server {
   String name = "";
@@ -50,5 +51,6 @@ Future<List<Server>> getServers() async {
 }
 
 final serverListProvider = FutureProvider<List<Server>>((ref) async {
-  return getServers();
+  final serverListAsyncValue = getServers();
+  return serverListAsyncValue;
 });

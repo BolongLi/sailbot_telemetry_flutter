@@ -34,6 +34,15 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    final serverListAsyncValue = ref.watch(serverListProvider);
+    serverListAsyncValue.when(
+        loading: () {},
+        error: (error, stackTrace) {},
+        data: (servers) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ref.read(selectedServerProvider.notifier).state = servers[0];
+          });
+        });
 
     _networkComms = ref.watch(networkCommsProvider);
 
@@ -159,8 +168,8 @@ class MyApp extends ConsumerWidget {
                 ]),
               ),
             ),
-          const PathPoint(),
-          PathButtons(),
+            const PathPoint(),
+            PathButtons(),
           ])),
     );
   }
