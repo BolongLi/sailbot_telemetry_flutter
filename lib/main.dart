@@ -13,6 +13,8 @@ import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
 import 'package:sailbot_telemetry_flutter/widgets/autonomous_mode_selector.dart';
 import 'package:sailbot_telemetry_flutter/widgets/trim_state_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/ballast_slider.dart';
+import 'package:sailbot_telemetry_flutter/widgets/path_point.dart';
+import 'package:sailbot_telemetry_flutter/widgets/path_buttons.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 
 import 'dart:developer' as dev;
@@ -151,6 +153,8 @@ class MyApp extends ConsumerWidget {
                 ]),
               ),
             ),
+          const PathPoint(),
+          PathButtons(),
           ])),
     );
   }
