@@ -20,7 +20,8 @@ class ConnectionNotifier extends StateNotifier<Color> {
   final Color _connectionColorOK = Colors.green;
   NetworkComms? _networkComms;
   late StateNotifierProviderRef _ref;
-  late bool _cameraActive;
+  bool _cameraActive = false;
+  Server? _selectedServer;
 
   ConnectionNotifier(StateNotifierProviderRef ref) : super(Colors.red) {
     _timer =
@@ -34,6 +35,9 @@ class ConnectionNotifier extends StateNotifier<Color> {
     ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
       _networkComms = networkComms;
     });
+    ref.listen<Server?>(selectedServerProvider, (_, selectedServer) {
+      _selectedServer = selectedServer;
+    });
     ref.listen<bool>(cameraToggleProvider, (_, cameraActive) {
       _cameraActive = cameraActive;
     });
@@ -44,8 +48,9 @@ class ConnectionNotifier extends StateNotifier<Color> {
     if (currentTime.millisecondsSinceEpoch - _lastConnectionTime > 3000) {
       state = _colorError;
       dev.log("Resetting comms");
-      _ref.read(selectedServerProvider.notifier).state =
-          _ref.read(selectedServerProvider);
+      final lastServer = _ref.read(selectedServerProvider);
+      _ref.read(selectedServerProvider.notifier).state = Server(name: "", address: "");
+      _ref.read(selectedServerProvider.notifier).state = lastServer;
       if (_cameraActive) {
         _networkComms?.startVideoStreaming();
       }

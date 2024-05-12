@@ -6,6 +6,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/node_restart.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/video.pbgrpc.dart';
+
 import 'dart:developer' as dev; //log() conflicts with math
 
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart' as gh;
@@ -14,11 +15,11 @@ final boatStateProvider = StateNotifierProvider<BoatStateNotifier, BoatState>((r
   return BoatStateNotifier();
 });
 
-final mapImageProvider = StateNotifierProvider<MapImageNotifier, MapResponse>((ref) {
+final mapImageProvider = StateNotifierProvider<MapImageNotifier, MapResponse?>((ref) {
   return MapImageNotifier();
 });
 
-final videoFrameProvider = StateNotifierProvider<VideoFrameNotifier, VideoFrame>((ref) {
+final videoFrameProvider = StateNotifierProvider<VideoFrameNotifier, VideoFrame?>((ref) {
   return VideoFrameNotifier();
 });
 
@@ -30,35 +31,51 @@ class BoatStateNotifier extends StateNotifier<BoatState> {
   }
 }
 
-class MapImageNotifier extends StateNotifier<MapResponse> {
-  MapImageNotifier() : super(MapResponse());
+class MapImageNotifier extends StateNotifier<MapResponse?> {
+  MapImageNotifier() : super(null);
 
   void update(MapResponse newImage) {
     state = newImage;
   }
 }
 
-class VideoFrameNotifier extends StateNotifier<VideoFrame> {
-  VideoFrameNotifier() : super(VideoFrame());
+class VideoFrameNotifier extends StateNotifier<VideoFrame?> {
+  VideoFrameNotifier() : super(null); // Start with no initial frame
 
   void update(VideoFrame newFrame) {
-    state = newFrame;
+    state = newFrame; // Update the state when a new frame is received
   }
 }
 
 final selectedServerProvider = StateProvider<gh.Server?>((ref) => null);
 
-final networkCommsProvider = Provider<NetworkComms?>((ref) {
+final networkCommsProvider = StateNotifierProvider<NetworkCommsNotifier, NetworkComms?>((ref) {
   final selectedServer = ref.watch(selectedServerProvider);
-  dev.log("Watching selectedServerProvider: ${selectedServer?.address}");
+  final notifier = NetworkCommsNotifier(ref, selectedServer);
   if (selectedServer != null) {
-    dev.log("Recreating NetworkComms with server: ${selectedServer.address}");
-    return NetworkComms(selectedServer.address, ref);
-  } else {
-    dev.log("Selected server is null, returning null");
+      notifier.changeServer(selectedServer);
   }
-  return null; // Return null until a server is selected
+  return notifier;
 });
+
+
+class NetworkCommsNotifier extends StateNotifier<NetworkComms?> {
+  NetworkCommsNotifier(this.ref, this.selectedServer) : super(null);
+  final StateNotifierProviderRef ref;
+  final gh.Server? selectedServer;
+  void changeServer(gh.Server selectedServer) {
+        state?.dispose();  // Dispose the old instance
+        state = NetworkComms(selectedServer.address, ref);  // Create a new instance
+        dev.log('NetworkComms instance changed to new server: ${selectedServer.address}');
+    }
+
+    @override
+    void dispose() {
+      dev.log("Disposing NetworkComms");
+        state?.dispose();  // Ensure resources are cleaned up when notifier is disposed
+        super.dispose();
+    }
+}
 
 class NetworkComms {
   String? server;
@@ -80,11 +97,13 @@ class NetworkComms {
   StreamSubscription<VideoFrame>? _streamSubscription;
   String _currentCameraSource = 'COLOR';
 
+  StreamSubscription<BoatState>? _boatStateSubscription;
+
   Timer? _timer;
 
   ClientChannel? channel;
 
-  final ProviderRef ref;
+  final StateNotifierProviderRef ref;
 
   NetworkComms(this.server, this.ref) {
     _createClient();
@@ -97,8 +116,9 @@ class NetworkComms {
   }
 
   void _initializeBoatStateStream() {
+    try {
     final call = _streamBoatStateStub!.streamBoatState(BoatStateRequest());
-    call.listen((BoatState response) {
+    _boatStateSubscription = call.listen((BoatState response) {
       ref.read(boatStateProvider.notifier).update(response);
     }, onError: (e) {
       dev.log("Error: $e", name: "network");
@@ -107,6 +127,9 @@ class NetworkComms {
       // Stream closed, possibly due to server shutdown or network issue
       dev.log("Stream closed", name: "network");
     });
+    } catch (e) {
+        dev.log("Failed to start stream: $e");
+    }
   }
 
   Future<void> _createClient() async {
@@ -116,6 +139,10 @@ class NetworkComms {
       dev.log("Something went wrong, server address is null", name: 'network');
       return;
     }
+    if(server==''){
+      return;
+    }
+    try {
     channel = ClientChannel(
       server ?? "?",
       port: 50051,
@@ -153,7 +180,13 @@ class NetworkComms {
           dev.log("Connection is shutting down or shut down.", name: 'network');
           break;
       }
+    }, onError: (error) {
+      dev.log('onError');
     });
+    } catch (e){
+      dev.log("Could not create channel");
+      return;
+    }
     dev.log("created channel", name: 'network');
     _rudderCommandServiceClient = ExecuteRudderCommandServiceClient(channel!);
     _trimTabCommandServiceClient = ExecuteTrimTabCommandServiceClient(channel!);
@@ -180,6 +213,13 @@ class NetworkComms {
 
   terminate() {
     channel?.terminate();
+  }
+
+  void dispose() {
+    _streamSubscription?.cancel(); // Cancel any active subscriptions
+    _boatStateSubscription?.cancel();
+    channel?.shutdown();          // Gracefully shutdown the gRPC channel
+    dev.log('NetworkComms resources have been disposed.');
   }
 
   startVideoStreaming() {
@@ -216,6 +256,10 @@ class NetworkComms {
     _restartNodeStub?.restartNode(request).then((response) {
       dev.log("Restart node: ${response.success ? "success" : "fail"}",
           name: "network");
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -227,6 +271,10 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Rudder control command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -239,6 +287,10 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Trimtab control command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -253,8 +305,12 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Ballast control command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
-  }
+    }
 
   setWaypoints(
     WaypointPath newWaypoints,
@@ -268,6 +324,10 @@ class NetworkComms {
       dev.log(
           "Override waypoints control command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -282,6 +342,10 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Add waypoint control command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -294,6 +358,10 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Autonomous mode control command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -307,6 +375,10 @@ class NetworkComms {
       dev.log(
           "Set VF forward magnitude command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 
@@ -319,6 +391,10 @@ class NetworkComms {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Set rudder KP command returned with response: $status",
           name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
     });
   }
 }

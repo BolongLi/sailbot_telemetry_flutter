@@ -54,8 +54,10 @@ class CameraView extends ConsumerWidget {
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<VideoFrame>(videoFrameProvider, (_, videoFrame) {
-      ref.read(imageProvider.notifier).updateImage(Uint8List.fromList(videoFrame.data));
+    ref.listen<VideoFrame?>(videoFrameProvider, (_, videoFrame) {
+      if(videoFrame != null){
+        ref.read(imageProvider.notifier).updateImage(Uint8List.fromList(videoFrame.data));
+      }
     });
     final imageState = ref.watch(imageProvider);
 

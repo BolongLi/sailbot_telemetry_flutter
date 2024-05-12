@@ -200,16 +200,19 @@ class MapImageView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final map = ref.watch(mapImageProvider);
-
-    // Create or update the memory image only when the map image data changes
-    ref.watch(memoryImageProvider.notifier).update((state) {
-      return MemoryImage(Uint8List.fromList(map.imageData));
-    });
+    if(map!= null){
+      // Create or update the memory image only when the map image data changes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(memoryImageProvider.notifier).update((state) {
+          return MemoryImage(Uint8List.fromList(map.imageData));
+        });
+      });
+    }
 
     return Consumer(
       builder: (context, ref, child) {
         final image = ref.watch(memoryImageProvider);
-        if (image != null) {
+        if (image != null && map != null) {
           final mapBounds = LatLngBounds(
             LatLng(map.north, map.west),
             LatLng(map.south, map.east),

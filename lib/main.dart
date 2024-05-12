@@ -33,6 +33,8 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
     _networkComms = ref.watch(networkCommsProvider);
 
     final trimTabKey = GlobalKey<CircleDragWidgetState>();
@@ -95,13 +97,17 @@ class MyApp extends ConsumerWidget {
         useMaterial3: true,
       ),
       home: Scaffold(
-          drawer: const NodesDrawer(),
+          // drawer: const NodesDrawer(),
           endDrawer: const SettingsDrawer(),
           key: _scaffoldState,
           body: Stack(children: [
             const Flex(direction: Axis.horizontal, children: <Widget>[
               Flexible(child: MapCameraWidget()),
             ]),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: MapCameraToggle(),
+            ),
             DrawerIconWidget(_scaffoldState),
             Align(
                 alignment: Alignment.topRight,

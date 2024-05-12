@@ -10,6 +10,15 @@ class Server {
   factory Server.fromJson(Map<String, dynamic> json) {
     return Server(name: json['name'], address: json['address']);
   }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Server &&
+          runtimeType == other.runtimeType &&
+          address == other.address;
+
+  @override
+  int get hashCode => address.hashCode;
 }
 
 Future<RepositoryContents> listFilesInRepo(

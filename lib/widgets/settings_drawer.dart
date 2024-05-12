@@ -36,8 +36,24 @@ class SettingsDrawer extends ConsumerWidget {
                   loading: () => const CircularProgressIndicator(),
                   error: (err, stack) => Text('Error: $err'),
                   data: (List<Server> servers) {
+                    final currentServer = ref.watch(selectedServerProvider);
+                    Server? selectedServer;
+
+                    if (currentServer == null) {
+                      // Automatically select the first server if the current server is null
+                      selectedServer = servers.first;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ref.read(selectedServerProvider.notifier).state = selectedServer;
+                      });
+                      return Text("Loading...");
+                    } else {
+                      dev.log("current server is ${currentServer.name}"); // ?
+                      if(currentServer.name == ""){
+                        return Text("Loading...");
+                      }
+                    }
                     return DropdownButton<Server>(
-                      value: ref.watch(selectedServerProvider),
+                      value: currentServer,
                       onChanged: (Server? newValue) {
                         if (newValue != null) {
                           ref.read(selectedServerProvider.notifier).state =
@@ -89,4 +105,14 @@ class SettingsDrawer extends ConsumerWidget {
       ),
     );
   }
+  Server? findMatchingServer(List<Server> servers, Server? currentValue) {
+  if (currentValue == null) return null;
+
+  try {
+    return servers.firstWhere((server) => server.address == currentValue.address);
+  } catch (e) {
+    // No matching server found
+    return null;
+  }
+}
 }
