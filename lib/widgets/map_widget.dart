@@ -120,6 +120,21 @@ class BoatStateView extends ConsumerWidget {
                     color: Colors.purple,
                   )))));
     }
+    if (boatState.hasTargetTrack) {
+      markers.add(Marker(
+          point: boatLatLng,
+          height: 80,
+          width: 80,
+          child: Transform.rotate(
+              angle: boatState.targetTrack_37 * pi / 180,
+              child: Transform.scale(
+                  scaleY: 2,
+                  scaleX: 1.5,
+                  child: const Icon(
+                    Icons.arrow_upward,
+                    color: Colors.red,
+                  )))));
+    }
     //path lines
     var boatPoints = boatState.currentPath.points;
     dev.log("Path has ${boatPoints.length} points");

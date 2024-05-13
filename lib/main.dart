@@ -44,8 +44,12 @@ class MyApp extends ConsumerWidget {
             ref.read(selectedServerProvider.notifier).state = servers[0];
           });
         });
-
+    ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
+      _networkComms = networkComms;
+      ref.read(autonomousModeProvider.notifier).state = 'NONE';
+    });
     _networkComms = ref.watch(networkCommsProvider);
+
 
     final trimTabKey = GlobalKey<CircleDragWidgetState>();
     final trimTabControlWidget = CircleDragWidget(
