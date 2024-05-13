@@ -16,6 +16,9 @@ import 'package:sailbot_telemetry_flutter/widgets/ballast_slider.dart';
 import 'package:sailbot_telemetry_flutter/widgets/path_point.dart';
 import 'package:sailbot_telemetry_flutter/widgets/path_buttons.dart';
 import 'package:sailbot_telemetry_flutter/widgets/video_source_select.dart';
+import 'package:sailbot_telemetry_flutter/widgets/heading_speed_display.dart';
+import 'package:sailbot_telemetry_flutter/widgets/wind_direction_display.dart';
+import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 
 import 'dart:developer' as dev;
@@ -49,7 +52,6 @@ class MyApp extends ConsumerWidget {
       ref.read(autonomousModeProvider.notifier).state = 'NONE';
     });
     _networkComms = ref.watch(networkCommsProvider);
-
 
     final trimTabKey = GlobalKey<CircleDragWidgetState>();
     final trimTabControlWidget = CircleDragWidget(
@@ -123,33 +125,17 @@ class MyApp extends ConsumerWidget {
               child: MapCameraToggle(),
             ),
             DrawerIconWidget(_scaffoldState),
+            AlignPositioned(
+                alignment: Alignment.bottomCenter,
+                centerPoint: Offset(displayWidth(context) / 1.5, 0),
+                child: const HeadingSpeedDisplay()),
+            AlignPositioned(
+                alignment: Alignment.centerRight,
+                centerPoint: Offset(0, displayHeight(context) / 2),
+                child: const WindDirectionDisplay()),
             Align(
                 alignment: Alignment.topRight,
                 child: SettingsIconWidget(_scaffoldState)),
-            Transform.translate(
-              offset: Offset(displayWidth(context) / 9, -40),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                // centerPoint:
-                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-                child: rudderControlWidget,
-              ),
-            ),
-            Transform.translate(
-              offset: Offset(-displayWidth(context) / 9, -40),
-              child: Align(
-                alignment: Alignment.bottomRight,
-                // centerPoint:
-                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
-                child: trimTabControlWidget,
-              ),
-            ),
-            Transform.translate(
-                offset: Offset(0, displayHeight(context) / 2 - 180),
-                child: const Align(
-                    //alignment: Alignment.bottomCenter,
-                    child: SizedBox(
-                        height: 40, width: 300, child: BallastSlider()))),
             Align(
               alignment: Alignment.centerRight,
               child: Container(
@@ -178,15 +164,40 @@ class MyApp extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: Container(
-              transform: Matrix4.translationValues(0, -60.0, 0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey),
+                transform: Matrix4.translationValues(0, -60.0, 0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: VideoSourceSelect(),
               ),
-              child: VideoSourceSelect(),
             ),
-    )])),
+            Transform.translate(
+              offset: Offset(displayWidth(context) / 9, -40),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                // centerPoint:
+                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+                child: rudderControlWidget,
+              ),
+            ),
+            Transform.translate(
+              offset: Offset(-displayWidth(context) / 9, -40),
+              child: Align(
+                alignment: Alignment.bottomRight,
+                // centerPoint:
+                //     Offset(displayWidth(context) / 2, displayHeight(context) / 2),
+                child: trimTabControlWidget,
+              ),
+            ),
+            Transform.translate(
+                offset: Offset(0, displayHeight(context) / 2 - 180),
+                child: const Align(
+                    //alignment: Alignment.bottomCenter,
+                    child: SizedBox(
+                        height: 40, width: 300, child: BallastSlider()))),
+          ])),
     );
   }
 
