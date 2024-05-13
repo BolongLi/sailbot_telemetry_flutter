@@ -8,23 +8,40 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/widgets/icons.dart';
 import 'dart:math';
 
-class PathButtons extends ConsumerWidget {
-  PathButtons({super.key});
-
-  late WidgetRef _ref;
-  NetworkComms? _networkComms;
+class PathButtons extends ConsumerStatefulWidget {
+  PathButtons({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    _ref = ref;
-    _networkComms = ref.watch(networkCommsProvider);
+  _PathButtonsState createState() => _PathButtonsState();
+}
 
+class _PathButtonsState extends ConsumerState<PathButtons> {
+  late TextEditingController latController;
+  late TextEditingController lonController;
+  FocusNode latFocusNode = FocusNode();
+  FocusNode lonFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    latController = TextEditingController();
+    lonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    latController.dispose();
+    lonController.dispose();
+    latFocusNode.dispose();
+    lonFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final mapState = ref.watch(mapStateProvider);
-
-    TextEditingController latController = TextEditingController();
-    TextEditingController lonController = TextEditingController();
-    var pressLat = mapState.mapPressLatLng?.latitude;
-    var pressLong = mapState.mapPressLatLng?.longitude;
+    final pressLat = mapState.mapPressLatLng?.latitude;
+    final pressLong = mapState.mapPressLatLng?.longitude;
     LatLng latlng = LatLng(pressLat ?? 0, pressLong ?? 0);
 
     if (!mapState.showPathButton) {
@@ -38,8 +55,9 @@ class PathButtons extends ConsumerWidget {
     double top = mapState.mapPressPosition?.global.dy ?? 0;
     double left = mapState.mapPressPosition?.global.dx ?? 0;
 
+    // Widget dimensions
     double widgetHeight = 180; // Approximate height of the widget
-    double widgetWidth = 183; // Approximate width of the widget
+    double widgetWidth = 240; // Approximate width of the widget
 
     // Adjust position if the widget goes off-screen
     if (top + widgetHeight > screenSize.height) {
@@ -53,7 +71,7 @@ class PathButtons extends ConsumerWidget {
       top: top,
       left: left,
       child: Container(
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.all(Radius.circular(20))), 
+        decoration: const BoxDecoration(color: Colors.white),
         child: Row(children: <Widget>[
           Column(children: <Widget>[
             SizedBox(
@@ -62,6 +80,7 @@ class PathButtons extends ConsumerWidget {
                 title: const Text("Latitude"),
                 subtitle: TextField(
                   controller: latController,
+                  focusNode: latFocusNode,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(hintText: pressLat.toString()),
@@ -71,6 +90,7 @@ class PathButtons extends ConsumerWidget {
                   onEditingComplete: () {
                     latlng = LatLng(
                         double.parse(latController.text), latlng.longitude);
+                    FocusScope.of(context).requestFocus(lonFocusNode); // Move to next field
                   },
                 ),
               ),
@@ -81,6 +101,7 @@ class PathButtons extends ConsumerWidget {
                 title: const Text("Longitude"),
                 subtitle: TextField(
                   controller: lonController,
+                  focusNode: lonFocusNode,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(hintText: pressLong.toString()),
@@ -90,6 +111,7 @@ class PathButtons extends ConsumerWidget {
                   onEditingComplete: () {
                     latlng = LatLng(
                         latlng.latitude, double.parse(lonController.text));
+                    FocusScope.of(context).unfocus(); // Unfocus the field
                   },
                 ),
               ),
@@ -140,7 +162,7 @@ class PathButtons extends ConsumerWidget {
     point.longitude = pos?.longitude ?? 0;
     tappedPoint.point = point;
 
-    _networkComms?.addWaypoint(tappedPoint);
-    _ref.read(mapStateProvider.notifier).resetTapDetails();
+    ref.read(networkCommsProvider)?.addWaypoint(tappedPoint);
+    ref.read(mapStateProvider.notifier).resetTapDetails();
   }
 }
