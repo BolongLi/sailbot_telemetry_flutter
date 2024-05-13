@@ -160,7 +160,6 @@ class MyApp extends ConsumerWidget {
               ),
             ),
             const PathPoint(),
-            PathButtons(),
             Align(
               alignment: Alignment.centerRight,
               child: Container(
@@ -197,6 +196,7 @@ class MyApp extends ConsumerWidget {
                     //alignment: Alignment.bottomCenter,
                     child: SizedBox(
                         height: 40, width: 300, child: BallastSlider()))),
+            PathButtons(),
           ])),
     );
   }
