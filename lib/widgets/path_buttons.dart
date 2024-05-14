@@ -45,6 +45,8 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
     LatLng latlng = LatLng(pressLat ?? 0, pressLong ?? 0);
 
     if (!mapState.showPathButton) {
+      latController.text = "";
+      lonController.text = "";
       return const SizedBox.shrink();
     }
 
@@ -71,7 +73,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
       top: top,
       left: left,
       child: Container(
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
         child: Row(children: <Widget>[
           Column(children: <Widget>[
             SizedBox(
