@@ -6,7 +6,7 @@ import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 
 final videoSourceProvider =
-    StateProvider<String>((ref) => 'COLOR'); // true for camera, false for map
+    StateProvider<String>((ref) => 'COLOR');
 
 class VideoSourceSelect extends ConsumerWidget {
   VideoSourceSelect({super.key});

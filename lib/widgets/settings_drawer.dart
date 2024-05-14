@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
+import 'package:sailbot_telemetry_flutter/widgets/cv_settings.dart';
 import 'dart:developer' as dev;
 
 final vfForwardMagnitudeProvider = StateProvider<String>((ref) => '1.0');
@@ -24,12 +25,6 @@ class SettingsDrawer extends ConsumerWidget {
     return Drawer(
       child: ListView(
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
-            child: Text('Drawer Header'),
-          ),
           ListTile(
             title: Row(children: <Widget>[
               serverListAsyncValue.when(
@@ -45,11 +40,11 @@ class SettingsDrawer extends ConsumerWidget {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         ref.read(selectedServerProvider.notifier).state = selectedServer;
                       });
-                      return Text("Loading...");
+                      return const Text("Loading...");
                     } else {
                       dev.log("current server is ${currentServer.name}"); // ?
                       if(currentServer.name == ""){
-                        return Text("Loading...");
+                        return const Text("Loading...");
                       }
                     }
                     return DropdownButton<Server>(
@@ -101,6 +96,7 @@ class SettingsDrawer extends ConsumerWidget {
               }),
             ),
           ),
+          const CVSettings(),
         ],
       ),
     );

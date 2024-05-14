@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:grpc/grpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbgrpc.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pbserver.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/node_restart.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/video.pbgrpc.dart';
@@ -21,6 +22,10 @@ final mapImageProvider = StateNotifierProvider<MapImageNotifier, MapResponse?>((
 
 final videoFrameProvider = StateNotifierProvider<VideoFrameNotifier, VideoFrame?>((ref) {
   return VideoFrameNotifier();
+});
+
+final cvParametersProvider = StateNotifierProvider<CVParametersNotifier, CVParameters?>((ref) {
+  return CVParametersNotifier();
 });
 
 class BoatStateNotifier extends StateNotifier<BoatState> {
@@ -44,6 +49,14 @@ class VideoFrameNotifier extends StateNotifier<VideoFrame?> {
 
   void update(VideoFrame newFrame) {
     state = newFrame; // Update the state when a new frame is received
+  }
+}
+
+class CVParametersNotifier extends StateNotifier<CVParameters?> {
+  CVParametersNotifier() : super(null); // Start with no initial parameters
+
+  void update(CVParameters newParameters) {
+    state = newParameters;
   }
 }
 
@@ -89,9 +102,11 @@ class NetworkComms {
   ExecuteSetVFForwardMagnitudeCommandServiceClient?
       _setVFForwardMagnitudeCommandServiceClient;
   ExecuteSetRudderKPCommandServiceClient? _setRudderKPCommandServiceClient;
+  ExecuteSetCVParametersCommandServiceClient? _setCVParametersCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
+  GetCVParametersServiceClient? _getCVParametersServiceClient;
   RestartNodeServiceClient? _restartNodeStub;
   VideoStreamerClient? _videoStreamerStub;
   StreamSubscription<VideoFrame>? _streamSubscription;
@@ -163,6 +178,7 @@ class NetworkComms {
         case ConnectionState.ready:
           dev.log("Connected to server.", name: 'network');
           MapRequest request = MapRequest();
+          // Get current navigation map
           _getMapStub?.getMap(request).then((response) {
             dev.log(
                 "got map response: ${response.north}, ${response.south}, ${response.east}, ${response.west}");
@@ -170,6 +186,13 @@ class NetworkComms {
               ref.read(mapImageProvider.notifier).update(response);
             }
           });
+          // Get current CV parameters
+          GetCVParametersRequest cvRequest = GetCVParametersRequest();
+          _getCVParametersServiceClient?.getCVParameters(cvRequest).then((response) {
+            dev.log(
+                "got cv response: ${response}");
+            ref.read(cvParametersProvider.notifier).update(response);
+          },);
 
           _initializeBoatStateStream();
           break;
@@ -201,9 +224,11 @@ class NetworkComms {
         ExecuteSetVFForwardMagnitudeCommandServiceClient(channel!);
     _setRudderKPCommandServiceClient =
         ExecuteSetRudderKPCommandServiceClient(channel!);
+    _setCVParametersCommandServiceClient = ExecuteSetCVParametersCommandServiceClient(channel!);
     _sendBoatStateStub = SendBoatStateServiceClient(channel!);
     _streamBoatStateStub = StreamBoatStateServiceClient(channel!);
     _getMapStub = GetMapServiceClient(channel!);
+    _getCVParametersServiceClient = GetCVParametersServiceClient(channel!);
     _restartNodeStub = RestartNodeServiceClient(channel!);
     _videoStreamerStub = VideoStreamerClient(channel!);
 
@@ -393,6 +418,19 @@ class NetworkComms {
           name: 'network');
     }, onError: (error) {
       dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
+    });
+  }
+
+  setCVParameters(CVParameters parameters) {
+    SetCVParametersCommand command = SetCVParametersCommand(parameters: parameters);
+    _setCVParametersCommandServiceClient?.executeSetCVParametersCommand(command).then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Set CV Parameters command returned with response: $status",
+          name: 'network');
+    }, onError: (error) {
+      dev.log(error);
     }).catchError((error) {
       dev.log('catchError');
     });
