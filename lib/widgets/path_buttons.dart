@@ -6,6 +6,7 @@ import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_widget.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/widgets/icons.dart';
+import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 import 'dart:math';
 
 class PathButtons extends ConsumerStatefulWidget {
@@ -39,12 +40,13 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
 
   @override
   Widget build(BuildContext context) {
+    final isMapVisible = ref.watch(cameraToggleProvider);
     final mapState = ref.watch(mapStateProvider);
     final pressLat = mapState.mapPressLatLng?.latitude;
     final pressLong = mapState.mapPressLatLng?.longitude;
     LatLng latlng = LatLng(pressLat ?? 0, pressLong ?? 0);
 
-    if (!mapState.showPathButton) {
+    if (!mapState.showPathButton || !isMapVisible) {
       latController.text = "";
       lonController.text = "";
       return const SizedBox.shrink();
