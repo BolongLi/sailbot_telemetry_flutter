@@ -1,3 +1,6 @@
 [submodule "lib/submodules/telemetry_messages"]
 	path = lib/submodules/telemetry_messages
 	url = git@github.com:wpisailbot/telemetry_messages.git
+[submodule "lib/submodules/startup_messages"]
+	path = lib/submodules/startup_messages
+	url = git@github.com:wpisailbot/startup_messages.git
