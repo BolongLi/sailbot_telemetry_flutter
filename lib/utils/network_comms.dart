@@ -122,7 +122,7 @@ class NetworkComms {
 
   NetworkComms(this.server, this.ref) {
     _createClient();
-    dev.log('created client to boat');
+    //dev.log('created client to boat');
   }
 
   void reconnect(String server) {
@@ -149,7 +149,7 @@ class NetworkComms {
 
   Future<void> _createClient() async {
     _timer?.cancel();
-    dev.log("about to create channel", name: 'network');
+    //dev.log("about to create channel", name: 'network');
     if (server == null) {
       dev.log("Something went wrong, server address is null", name: 'network');
       return;
@@ -173,7 +173,7 @@ class NetworkComms {
           dev.log("Connection is idle.", name: 'network');
           break;
         case ConnectionState.connecting:
-          dev.log("Connecting to server...", name: 'network');
+          //dev.log("Connecting to server...", name: 'network');
           break;
         case ConnectionState.ready:
           dev.log("Connected to server.", name: 'network');
@@ -200,7 +200,7 @@ class NetworkComms {
           dev.log("Connection lost, transient failure", name: 'network');
           break;
         case ConnectionState.shutdown:
-          dev.log("Connection is shutting down or shut down.", name: 'network');
+          //dev.log("Connection is shutting down or shut down.", name: 'network');
           break;
       }
     }, onError: (error) {
@@ -210,7 +210,7 @@ class NetworkComms {
       dev.log("Could not create channel");
       return;
     }
-    dev.log("created channel", name: 'network');
+    //dev.log("created channel", name: 'network');
     _rudderCommandServiceClient = ExecuteRudderCommandServiceClient(channel!);
     _trimTabCommandServiceClient = ExecuteTrimTabCommandServiceClient(channel!);
     _ballastCommandServiceClient = ExecuteBallastCommandServiceClient(channel!);

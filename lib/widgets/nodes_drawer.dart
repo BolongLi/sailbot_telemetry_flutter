@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
+import 'package:sailbot_telemetry_flutter/widgets/server_select.dart';
+import 'package:sailbot_telemetry_flutter/widgets/ros2_control_buttons.dart';
+
 
 class NodesDrawer extends ConsumerWidget {
   const NodesDrawer({super.key});
@@ -77,6 +80,8 @@ class NodesDrawer extends ConsumerWidget {
 
     return Drawer(
       child: Column(children: [
+        const ServerSelect(),
+        const ROS2ControlButtons(),
         Expanded(
           child: Row(
             children: <Widget>[
