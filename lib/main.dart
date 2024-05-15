@@ -20,6 +20,7 @@ import 'package:sailbot_telemetry_flutter/widgets/heading_speed_display.dart';
 import 'package:sailbot_telemetry_flutter/widgets/wind_direction_display.dart';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
+import 'package:sailbot_telemetry_flutter/widgets/rudder_control_widget.dart';
 
 import 'dart:developer' as dev;
 
@@ -65,17 +66,7 @@ class MyApp extends ConsumerWidget {
       key: trimTabKey,
     );
 
-    final rudderKey = GlobalKey<CircleDragWidgetState>();
-    final rudderControlWidget = CircleDragWidget(
-      width: 150,
-      height: 75,
-      lineLength: 60,
-      radius: 7,
-      resetOnRelease: true,
-      isInteractive: true,
-      callback: _updateRudderAngle,
-      key: rudderKey,
-    );
+    final rudderControlWidget = RudderControlWidget();
 
     ref.listen<String>(autonomousModeProvider, (_, selectedMode) {
       if (selectedMode == 'NONE') {
