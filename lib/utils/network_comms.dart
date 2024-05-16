@@ -12,19 +12,23 @@ import 'dart:developer' as dev; //log() conflicts with math
 
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart' as gh;
 
-final boatStateProvider = StateNotifierProvider<BoatStateNotifier, BoatState>((ref) {
+final boatStateProvider =
+    StateNotifierProvider<BoatStateNotifier, BoatState>((ref) {
   return BoatStateNotifier();
 });
 
-final mapImageProvider = StateNotifierProvider<MapImageNotifier, MapResponse?>((ref) {
+final mapImageProvider =
+    StateNotifierProvider<MapImageNotifier, MapResponse?>((ref) {
   return MapImageNotifier();
 });
 
-final videoFrameProvider = StateNotifierProvider<VideoFrameNotifier, VideoFrame?>((ref) {
+final videoFrameProvider =
+    StateNotifierProvider<VideoFrameNotifier, VideoFrame?>((ref) {
   return VideoFrameNotifier();
 });
 
-final cvParametersProvider = StateNotifierProvider<CVParametersNotifier, CVParameters?>((ref) {
+final cvParametersProvider =
+    StateNotifierProvider<CVParametersNotifier, CVParameters?>((ref) {
   return CVParametersNotifier();
 });
 
@@ -62,32 +66,34 @@ class CVParametersNotifier extends StateNotifier<CVParameters?> {
 
 final selectedServerProvider = StateProvider<gh.Server?>((ref) => null);
 
-final networkCommsProvider = StateNotifierProvider<NetworkCommsNotifier, NetworkComms?>((ref) {
+final networkCommsProvider =
+    StateNotifierProvider<NetworkCommsNotifier, NetworkComms?>((ref) {
   final selectedServer = ref.watch(selectedServerProvider);
   final notifier = NetworkCommsNotifier(ref, selectedServer);
   if (selectedServer != null) {
-      notifier.changeServer(selectedServer);
+    notifier.changeServer(selectedServer);
   }
   return notifier;
 });
-
 
 class NetworkCommsNotifier extends StateNotifier<NetworkComms?> {
   NetworkCommsNotifier(this.ref, this.selectedServer) : super(null);
   final StateNotifierProviderRef ref;
   final gh.Server? selectedServer;
   void changeServer(gh.Server selectedServer) {
-        state?.dispose();  // Dispose the old instance
-        state = NetworkComms(selectedServer.address, ref);  // Create a new instance
-        dev.log('NetworkComms instance changed to new server: ${selectedServer.address}');
-    }
+    state?.dispose(); // Dispose the old instance
+    state = NetworkComms(selectedServer.address, ref); // Create a new instance
+    dev.log(
+        'NetworkComms instance changed to new server: ${selectedServer.address}');
+  }
 
-    @override
-    void dispose() {
-      dev.log("Disposing NetworkComms");
-        state?.dispose();  // Ensure resources are cleaned up when notifier is disposed
-        super.dispose();
-    }
+  @override
+  void dispose() {
+    dev.log("Disposing NetworkComms");
+    state
+        ?.dispose(); // Ensure resources are cleaned up when notifier is disposed
+    super.dispose();
+  }
 }
 
 class NetworkComms {
@@ -102,7 +108,9 @@ class NetworkComms {
   ExecuteSetVFForwardMagnitudeCommandServiceClient?
       _setVFForwardMagnitudeCommandServiceClient;
   ExecuteSetRudderKPCommandServiceClient? _setRudderKPCommandServiceClient;
-  ExecuteSetCVParametersCommandServiceClient? _setCVParametersCommandServiceClient;
+  ExecuteSetRudderKDCommandServiceClient? _setRudderKDCommandServiceClient;
+  ExecuteSetCVParametersCommandServiceClient?
+      _setCVParametersCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
@@ -132,18 +140,18 @@ class NetworkComms {
 
   void _initializeBoatStateStream() {
     try {
-    final call = _streamBoatStateStub!.streamBoatState(BoatStateRequest());
-    _boatStateSubscription = call.listen((BoatState response) {
-      ref.read(boatStateProvider.notifier).update(response);
-    }, onError: (e) {
-      dev.log("Error: $e", name: "network");
-      // Do not attempt to reconnect both here and in onDone, it creates exponential callbacks
-    }, onDone: () {
-      // Stream closed, possibly due to server shutdown or network issue
-      dev.log("Stream closed", name: "network");
-    });
+      final call = _streamBoatStateStub!.streamBoatState(BoatStateRequest());
+      _boatStateSubscription = call.listen((BoatState response) {
+        ref.read(boatStateProvider.notifier).update(response);
+      }, onError: (e) {
+        dev.log("Error: $e", name: "network");
+        // Do not attempt to reconnect both here and in onDone, it creates exponential callbacks
+      }, onDone: () {
+        // Stream closed, possibly due to server shutdown or network issue
+        dev.log("Stream closed", name: "network");
+      });
     } catch (e) {
-        dev.log("Failed to start stream: $e");
+      dev.log("Failed to start stream: $e");
     }
   }
 
@@ -154,59 +162,61 @@ class NetworkComms {
       dev.log("Something went wrong, server address is null", name: 'network');
       return;
     }
-    if(server==''){
+    if (server == '') {
       return;
     }
     try {
-    channel = ClientChannel(
-      server ?? "?",
-      port: 50051,
-      options: const ChannelOptions(
-        credentials: ChannelCredentials.insecure(),
-        keepAlive: ClientKeepAliveOptions(
-            pingInterval: Duration(seconds: 1), timeout: Duration(seconds: 2)),
-      ),
-    );
-    channel?.onConnectionStateChanged.listen((connectionState) {
-      switch (connectionState) {
-        case ConnectionState.idle:
-          dev.log("Connection is idle.", name: 'network');
-          break;
-        case ConnectionState.connecting:
-          //dev.log("Connecting to server...", name: 'network');
-          break;
-        case ConnectionState.ready:
-          dev.log("Connected to server.", name: 'network');
-          MapRequest request = MapRequest();
-          // Get current navigation map
-          _getMapStub?.getMap(request).then((response) {
-            dev.log(
-                "got map response: ${response.north}, ${response.south}, ${response.east}, ${response.west}");
-            if (response.north != 0 && response.south != 0) {
-              ref.read(mapImageProvider.notifier).update(response);
-            }
-          });
-          // Get current CV parameters
-          GetCVParametersRequest cvRequest = GetCVParametersRequest();
-          _getCVParametersServiceClient?.getCVParameters(cvRequest).then((response) {
-            dev.log(
-                "got cv response: ${response}");
-            ref.read(cvParametersProvider.notifier).update(response);
-          },);
+      channel = ClientChannel(
+        server ?? "?",
+        port: 50051,
+        options: const ChannelOptions(
+          credentials: ChannelCredentials.insecure(),
+          keepAlive: ClientKeepAliveOptions(
+              pingInterval: Duration(seconds: 1),
+              timeout: Duration(seconds: 2)),
+        ),
+      );
+      channel?.onConnectionStateChanged.listen((connectionState) {
+        switch (connectionState) {
+          case ConnectionState.idle:
+            dev.log("Connection is idle.", name: 'network');
+            break;
+          case ConnectionState.connecting:
+            //dev.log("Connecting to server...", name: 'network');
+            break;
+          case ConnectionState.ready:
+            dev.log("Connected to server.", name: 'network');
+            MapRequest request = MapRequest();
+            // Get current navigation map
+            _getMapStub?.getMap(request).then((response) {
+              dev.log(
+                  "got map response: ${response.north}, ${response.south}, ${response.east}, ${response.west}");
+              if (response.north != 0 && response.south != 0) {
+                ref.read(mapImageProvider.notifier).update(response);
+              }
+            });
+            // Get current CV parameters
+            GetCVParametersRequest cvRequest = GetCVParametersRequest();
+            _getCVParametersServiceClient?.getCVParameters(cvRequest).then(
+              (response) {
+                dev.log("got cv response: ${response}");
+                ref.read(cvParametersProvider.notifier).update(response);
+              },
+            );
 
-          _initializeBoatStateStream();
-          break;
-        case ConnectionState.transientFailure:
-          dev.log("Connection lost, transient failure", name: 'network');
-          break;
-        case ConnectionState.shutdown:
-          //dev.log("Connection is shutting down or shut down.", name: 'network');
-          break;
-      }
-    }, onError: (error) {
-      dev.log('onError');
-    });
-    } catch (e){
+            _initializeBoatStateStream();
+            break;
+          case ConnectionState.transientFailure:
+            dev.log("Connection lost, transient failure", name: 'network');
+            break;
+          case ConnectionState.shutdown:
+            //dev.log("Connection is shutting down or shut down.", name: 'network');
+            break;
+        }
+      }, onError: (error) {
+        dev.log('onError');
+      });
+    } catch (e) {
       dev.log("Could not create channel");
       return;
     }
@@ -224,7 +234,10 @@ class NetworkComms {
         ExecuteSetVFForwardMagnitudeCommandServiceClient(channel!);
     _setRudderKPCommandServiceClient =
         ExecuteSetRudderKPCommandServiceClient(channel!);
-    _setCVParametersCommandServiceClient = ExecuteSetCVParametersCommandServiceClient(channel!);
+    _setRudderKDCommandServiceClient =
+        ExecuteSetRudderKDCommandServiceClient(channel!);
+    _setCVParametersCommandServiceClient =
+        ExecuteSetCVParametersCommandServiceClient(channel!);
     _sendBoatStateStub = SendBoatStateServiceClient(channel!);
     _streamBoatStateStub = StreamBoatStateServiceClient(channel!);
     _getMapStub = GetMapServiceClient(channel!);
@@ -243,7 +256,7 @@ class NetworkComms {
   void dispose() {
     _streamSubscription?.cancel(); // Cancel any active subscriptions
     _boatStateSubscription?.cancel();
-    channel?.shutdown();          // Gracefully shutdown the gRPC channel
+    channel?.shutdown(); // Gracefully shutdown the gRPC channel
     dev.log('NetworkComms resources have been disposed.');
   }
 
@@ -306,9 +319,8 @@ class NetworkComms {
   setTrimtabAngle(double angle) {
     TrimTabCommand command = TrimTabCommand();
     command.trimtabControlValue = angle;
-    _trimTabCommandServiceClient
-        ?.executeTrimTabCommand(command)
-        .then((response) {
+    _trimTabCommandServiceClient?.executeTrimTabCommand(command).then(
+        (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Trimtab control command returned with response: $status",
           name: 'network');
@@ -324,9 +336,8 @@ class NetworkComms {
           position /* positions from -1.0 (full left) to 1.0 (full right) */) {
     BallastCommand command = BallastCommand();
     command.ballastControlValue = position;
-    _ballastCommandServiceClient
-        ?.executeBallastCommand(command)
-        .then((response) {
+    _ballastCommandServiceClient?.executeBallastCommand(command).then(
+        (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Ballast control command returned with response: $status",
           name: 'network');
@@ -335,16 +346,15 @@ class NetworkComms {
     }).catchError((error) {
       dev.log('catchError');
     });
-    }
+  }
 
   setWaypoints(
     WaypointPath newWaypoints,
   ) {
     SetWaypointsCommand command = SetWaypointsCommand();
     command.newWaypoints = newWaypoints;
-    _setWaypointsCommandServiceClient
-        ?.executeSetWaypointsCommand(command)
-        .then((response) {
+    _setWaypointsCommandServiceClient?.executeSetWaypointsCommand(command).then(
+        (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log(
           "Override waypoints control command returned with response: $status",
@@ -361,9 +371,8 @@ class NetworkComms {
   ) {
     AddWaypointCommand command = AddWaypointCommand();
     command.newWaypoint = newWaypoint;
-    _addWaypointCommandServiceClient
-        ?.executeAddWaypointCommand(command)
-        .then((response) {
+    _addWaypointCommandServiceClient?.executeAddWaypointCommand(command).then(
+        (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Add waypoint control command returned with response: $status",
           name: 'network');
@@ -410,9 +419,8 @@ class NetworkComms {
   setRudderKP(double kp) {
     SetRudderKPCommand command = SetRudderKPCommand();
     command.kp = kp;
-    _setRudderKPCommandServiceClient
-        ?.executeSetRudderKPCommand(command)
-        .then((response) {
+    _setRudderKPCommandServiceClient?.executeSetRudderKPCommand(command).then(
+        (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Set rudder KP command returned with response: $status",
           name: 'network');
@@ -423,9 +431,27 @@ class NetworkComms {
     });
   }
 
+  setRudderKD(double kd) {
+    SetRudderKDCommand command = SetRudderKDCommand();
+    command.kd = kd;
+    _setRudderKDCommandServiceClient?.executeSetRudderKDCommand(command).then(
+        (response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Set rudder KD command returned with response: $status",
+          name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('catchError');
+    });
+  }
+
   setCVParameters(CVParameters parameters) {
-    SetCVParametersCommand command = SetCVParametersCommand(parameters: parameters);
-    _setCVParametersCommandServiceClient?.executeSetCVParametersCommand(command).then((response) {
+    SetCVParametersCommand command =
+        SetCVParametersCommand(parameters: parameters);
+    _setCVParametersCommandServiceClient
+        ?.executeSetCVParametersCommand(command)
+        .then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Set CV Parameters command returned with response: $status",
           name: 'network');

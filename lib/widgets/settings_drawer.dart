@@ -8,6 +8,7 @@ import 'dart:developer' as dev;
 
 final vfForwardMagnitudeProvider = StateProvider<String>((ref) => '1.0');
 final rudderKPProvider = StateProvider<String>((ref) => '1.0');
+final rudderKDProvider = StateProvider<String>((ref) => '10.0');
 
 class SettingsDrawer extends ConsumerWidget {
   const SettingsDrawer({super.key});
@@ -19,7 +20,7 @@ class SettingsDrawer extends ConsumerWidget {
 
     final lastVFForwardMagnitude = ref.watch(vfForwardMagnitudeProvider);
     final lastRudderKP = ref.watch(rudderKPProvider);
-
+    final lastRudderKD = ref.watch(rudderKDProvider);
     return Drawer(
       child: ListView(
         children: [
@@ -53,19 +54,36 @@ class SettingsDrawer extends ConsumerWidget {
               }),
             ),
           ),
+          ListTile(
+            title: const Text("Rudder KD"),
+            subtitle: TextField(
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(hintText: lastRudderKD),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+              ],
+              onSubmitted: ((String value) {
+                ref.read(rudderKDProvider.notifier).state = value;
+                networkComms?.setRudderKD(double.parse(value));
+              }),
+            ),
+          ),
           const CVSettings(),
         ],
       ),
     );
   }
-  Server? findMatchingServer(List<Server> servers, Server? currentValue) {
-  if (currentValue == null) return null;
 
-  try {
-    return servers.firstWhere((server) => server.address == currentValue.address);
-  } catch (e) {
-    // No matching server found
-    return null;
+  Server? findMatchingServer(List<Server> servers, Server? currentValue) {
+    if (currentValue == null) return null;
+
+    try {
+      return servers
+          .firstWhere((server) => server.address == currentValue.address);
+    } catch (e) {
+      // No matching server found
+      return null;
+    }
   }
-}
 }
