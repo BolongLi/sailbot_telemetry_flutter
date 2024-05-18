@@ -98,19 +98,8 @@ class NetworkCommsNotifier extends StateNotifier<NetworkComms?> {
 
 class NetworkComms {
   String? server;
-  ExecuteRudderCommandServiceClient? _rudderCommandServiceClient;
-  ExecuteTrimTabCommandServiceClient? _trimTabCommandServiceClient;
-  ExecuteBallastCommandServiceClient? _ballastCommandServiceClient;
-  ExecuteAutonomousModeCommandServiceClient?
-      _autonomousModeCommandServiceClient;
-  ExecuteSetWaypointsCommandServiceClient? _setWaypointsCommandServiceClient;
-  ExecuteAddWaypointCommandServiceClient? _addWaypointCommandServiceClient;
-  ExecuteSetVFForwardMagnitudeCommandServiceClient?
-      _setVFForwardMagnitudeCommandServiceClient;
-  ExecuteSetRudderKPCommandServiceClient? _setRudderKPCommandServiceClient;
-  ExecuteSetRudderKDCommandServiceClient? _setRudderKDCommandServiceClient;
-  ExecuteSetCVParametersCommandServiceClient?
-      _setCVParametersCommandServiceClient;
+  SetParameterServiceClient? _setParameterServiceClient;
+  ControlCommandServiceClient? _controlCommandServiceClient;
   SendBoatStateServiceClient? _sendBoatStateStub;
   StreamBoatStateServiceClient? _streamBoatStateStub;
   GetMapServiceClient? _getMapStub;
@@ -221,23 +210,8 @@ class NetworkComms {
       return;
     }
     //dev.log("created channel", name: 'network');
-    _rudderCommandServiceClient = ExecuteRudderCommandServiceClient(channel!);
-    _trimTabCommandServiceClient = ExecuteTrimTabCommandServiceClient(channel!);
-    _ballastCommandServiceClient = ExecuteBallastCommandServiceClient(channel!);
-    _autonomousModeCommandServiceClient =
-        ExecuteAutonomousModeCommandServiceClient(channel!);
-    _setWaypointsCommandServiceClient =
-        ExecuteSetWaypointsCommandServiceClient(channel!);
-    _addWaypointCommandServiceClient =
-        ExecuteAddWaypointCommandServiceClient(channel!);
-    _setVFForwardMagnitudeCommandServiceClient =
-        ExecuteSetVFForwardMagnitudeCommandServiceClient(channel!);
-    _setRudderKPCommandServiceClient =
-        ExecuteSetRudderKPCommandServiceClient(channel!);
-    _setRudderKDCommandServiceClient =
-        ExecuteSetRudderKDCommandServiceClient(channel!);
-    _setCVParametersCommandServiceClient =
-        ExecuteSetCVParametersCommandServiceClient(channel!);
+    _controlCommandServiceClient = ControlCommandServiceClient(channel!);
+    _setParameterServiceClient = SetParameterServiceClient(channel!);
     _sendBoatStateStub = SendBoatStateServiceClient(channel!);
     _streamBoatStateStub = StreamBoatStateServiceClient(channel!);
     _getMapStub = GetMapServiceClient(channel!);
@@ -305,7 +279,7 @@ class NetworkComms {
     RudderCommand command = RudderCommand();
     command.rudderControlValue = angle;
     dev.log("sending rudder command", name: "network");
-    _rudderCommandServiceClient?.executeRudderCommand(command).then((response) {
+    _controlCommandServiceClient?.executeRudderCommand(command).then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Rudder control command returned with response: $status",
           name: 'network');
@@ -319,7 +293,7 @@ class NetworkComms {
   setTrimtabAngle(double angle) {
     TrimTabCommand command = TrimTabCommand();
     command.trimtabControlValue = angle;
-    _trimTabCommandServiceClient?.executeTrimTabCommand(command).then(
+    _controlCommandServiceClient?.executeTrimTabCommand(command).then(
         (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Trimtab control command returned with response: $status",
@@ -336,7 +310,7 @@ class NetworkComms {
           position /* positions from -1.0 (full left) to 1.0 (full right) */) {
     BallastCommand command = BallastCommand();
     command.ballastControlValue = position;
-    _ballastCommandServiceClient?.executeBallastCommand(command).then(
+    _controlCommandServiceClient?.executeBallastCommand(command).then(
         (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Ballast control command returned with response: $status",
@@ -353,7 +327,7 @@ class NetworkComms {
   ) {
     SetWaypointsCommand command = SetWaypointsCommand();
     command.newWaypoints = newWaypoints;
-    _setWaypointsCommandServiceClient?.executeSetWaypointsCommand(command).then(
+    _controlCommandServiceClient?.executeSetWaypointsCommand(command).then(
         (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log(
@@ -371,7 +345,7 @@ class NetworkComms {
   ) {
     AddWaypointCommand command = AddWaypointCommand();
     command.newWaypoint = newWaypoint;
-    _addWaypointCommandServiceClient?.executeAddWaypointCommand(command).then(
+    _controlCommandServiceClient?.executeAddWaypointCommand(command).then(
         (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Add waypoint control command returned with response: $status",
@@ -386,7 +360,7 @@ class NetworkComms {
   setAutonomousMode(AutonomousMode mode) {
     AutonomousModeCommand command = AutonomousModeCommand();
     command.autonomousMode = mode;
-    _autonomousModeCommandServiceClient
+    _controlCommandServiceClient
         ?.executeAutonomousModeCommand(command)
         .then((response) {
       ControlExecutionStatus status = response.executionStatus;
@@ -402,7 +376,7 @@ class NetworkComms {
   setVFForwardMagnitude(double magnitude) {
     SetVFForwardMagnitudeCommand command = SetVFForwardMagnitudeCommand();
     command.magnitude = magnitude;
-    _setVFForwardMagnitudeCommandServiceClient
+    _setParameterServiceClient
         ?.executeSetVFForwardMagnitudeCommand(command)
         .then((response) {
       ControlExecutionStatus status = response.executionStatus;
@@ -416,10 +390,10 @@ class NetworkComms {
     });
   }
 
-  setRudderKP(double kp) {
-    SetRudderKPCommand command = SetRudderKPCommand();
-    command.kp = kp;
-    _setRudderKPCommandServiceClient?.executeSetRudderKPCommand(command).then(
+  setRudderAdjustmentScale(double scale) {
+    SetRudderAdjustmentScaleCommand command = SetRudderAdjustmentScaleCommand();
+    command.scale = scale;
+    _setParameterServiceClient?.executeSetRudderAdjustmentScaleCommand(command).then(
         (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Set rudder KP command returned with response: $status",
@@ -431,10 +405,10 @@ class NetworkComms {
     });
   }
 
-  setRudderKD(double kd) {
-    SetRudderKDCommand command = SetRudderKDCommand();
-    command.kd = kd;
-    _setRudderKDCommandServiceClient?.executeSetRudderKDCommand(command).then(
+  setRudderOvershootBias(double bias) {
+    SetRudderOvershootBiasCommand command = SetRudderOvershootBiasCommand();
+    command.bias = bias;
+    _setParameterServiceClient?.executeSetRudderOvershootBiasCommand(command).then(
         (response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Set rudder KD command returned with response: $status",
@@ -449,7 +423,7 @@ class NetworkComms {
   setCVParameters(CVParameters parameters) {
     SetCVParametersCommand command =
         SetCVParametersCommand(parameters: parameters);
-    _setCVParametersCommandServiceClient
+    _setParameterServiceClient
         ?.executeSetCVParametersCommand(command)
         .then((response) {
       ControlExecutionStatus status = response.executionStatus;

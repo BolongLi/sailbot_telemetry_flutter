@@ -40,7 +40,7 @@ class SettingsDrawer extends ConsumerWidget {
             ),
           ),
           ListTile(
-            title: const Text("Rudder KP"),
+            title: const Text("Rudder Adjustment Scale"),
             subtitle: TextField(
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -50,12 +50,12 @@ class SettingsDrawer extends ConsumerWidget {
               ],
               onSubmitted: ((String value) {
                 ref.read(rudderKPProvider.notifier).state = value;
-                networkComms?.setRudderKP(double.parse(value));
+                networkComms?.setRudderAdjustmentScale(double.parse(value));
               }),
             ),
           ),
           ListTile(
-            title: const Text("Rudder KD"),
+            title: const Text("Rudder Overshoot Bias"),
             subtitle: TextField(
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
@@ -65,7 +65,7 @@ class SettingsDrawer extends ConsumerWidget {
               ],
               onSubmitted: ((String value) {
                 ref.read(rudderKDProvider.notifier).state = value;
-                networkComms?.setRudderKD(double.parse(value));
+                networkComms?.setRudderOvershootBias(double.parse(value));
               }),
             ),
           ),
