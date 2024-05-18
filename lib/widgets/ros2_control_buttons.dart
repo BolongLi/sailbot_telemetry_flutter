@@ -17,7 +17,6 @@ class ROS2ControlButtons extends ConsumerWidget {
         child: const Icon(Icons.play_arrow),
         onPressed: () {
           ros2NetworkComms?.startLaunch("sailbot path_test_vf_fake.py");
-          ros2NetworkComms?.streamLogs();
       }),
       FloatingActionButton(
         child: const Icon(Icons.stop),

@@ -37,12 +37,19 @@ class ROS2ControlNotifier extends StateNotifier<String?> {
   }
 }
 
+String lastServerAddress = "dummy1";
+
 final ros2NetworkCommsProvider = StateNotifierProvider<ROS2NetworkCommsNotifier, ROS2NetworkComms?>((ref) {
-  gh.Server? selectedServer = ref.watch(selectedServerProvider);
   final notifier = ROS2NetworkCommsNotifier(ref);
-  if (selectedServer != null) {
+
+  ref.listen(selectedServerProvider, (__, selectedServer) { 
+    if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
+        dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
     notifier.initializeClient(selectedServer.address);
+    notifier.streamLogs();
+    lastServerAddress = selectedServer.address;
   }
+  });
   return notifier;
 });
 
@@ -51,10 +58,14 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
 
   final StateNotifierProviderRef ref;
   Timer? _retryTimer;
-  static const int _retryInterval = 1; // Retry interval in seconds
+  static const int _retryInterval = 2; // Retry interval in seconds
 
   void initializeClient(String serverAddress) {
     _createClient(serverAddress);
+  }
+
+  void streamLogs(){
+    state?.streamLogs();
   }
 
   Future<void> _createClient(String serverAddress) async {
@@ -62,18 +73,13 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
       final client = ROS2NetworkComms(serverAddress, ref);
       state = client;
       dev.log('Connected to ROS2 server at $serverAddress');
-      _retryTimer?.cancel();
     } catch (e) {
       dev.log('Failed to connect to ROS2 server at $serverAddress. Retrying in $_retryInterval seconds...');
-      // _retryTimer = Timer(Duration(seconds: _retryInterval), () {
-      //   _createClient(serverAddress);
-      // });
     }
   }
 
   @override
   void dispose() {
-    _retryTimer?.cancel();
     state?.dispose();
     super.dispose();
   }
@@ -84,6 +90,7 @@ class ROS2NetworkComms {
   ClientChannel? channel;
   ROS2ControlClient? ros2ControlClient;
   StreamSubscription<LogMessage>? _logSubscription;
+  Timer? _retryTimer;
 
   final StateNotifierProviderRef ref;
 
@@ -130,7 +137,7 @@ class ROS2NetworkComms {
       dev.log("Created ROS2 Control Client", name: 'ros2_network');
     } catch (e) {
       dev.log("Could not create channel: $e", name: 'ros2_network');
-      throw e;
+      rethrow;
     }
   }
 
@@ -162,6 +169,10 @@ class ROS2NetworkComms {
       dev.log(log.log, name: 'ros2_network_logs');
     }, onError: (e) {
       dev.log("Error streaming logs: $e", name: 'ros2_network');
+      _retryTimer = Timer(const Duration(seconds: 1), () {
+        streamLogs();
+        _retryTimer?.cancel();
+      });
     }, onDone: () {
       dev.log("Log stream closed", name: 'ros2_network');
     });
@@ -170,6 +181,7 @@ class ROS2NetworkComms {
   void cancelLogStream() {
     _logSubscription?.cancel();
     _logSubscription = null;
+    _retryTimer?.cancel();
     dev.log("Log stream canceled", name: 'ros2_network');
   }
 

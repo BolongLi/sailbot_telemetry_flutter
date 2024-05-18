@@ -5,6 +5,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 import 'package:sailbot_telemetry_flutter/widgets/server_select.dart';
 import 'package:sailbot_telemetry_flutter/widgets/ros2_control_buttons.dart';
+import 'package:sailbot_telemetry_flutter/widgets/terminal_widget.dart';
 
 
 class NodesDrawer extends ConsumerWidget {
@@ -92,6 +93,7 @@ class NodesDrawer extends ConsumerWidget {
             ],
           ),
         ),
+        const Expanded(child: TerminalWidget()),
         FloatingActionButton(
           onPressed: () {
             _showclearPathFormDialog(context, clearPath);
@@ -101,29 +103,6 @@ class NodesDrawer extends ConsumerWidget {
       ]),
     );
   }
-}
-
-Widget _buildMenuItem(
-  BuildContext context,
-  Widget title,
-  String routeName,
-  String currentRoute, {
-  Widget? icon,
-}) {
-  final isSelected = routeName == currentRoute;
-
-  return ListTile(
-    title: title,
-    leading: icon,
-    selected: isSelected,
-    onTap: () {
-      if (isSelected) {
-        Navigator.pop(context);
-      } else {
-        Navigator.pushReplacementNamed(context, routeName);
-      }
-    },
-  );
 }
 
 void _showclearPathFormDialog(BuildContext context, Function clearCallback) {
