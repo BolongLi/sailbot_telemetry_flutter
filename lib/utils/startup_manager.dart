@@ -106,8 +106,13 @@ class ROS2NetworkComms {
         port: 50052,
         options: const ChannelOptions(
           credentials: ChannelCredentials.insecure(),
+          idleTimeout: Duration(minutes: 1),
+          connectTimeout: Duration(seconds: 10),
+          
           keepAlive: ClientKeepAliveOptions(
-              pingInterval: Duration(seconds: 1), timeout: Duration(seconds: 2)),
+              pingInterval: Duration(seconds: 10), 
+              timeout: Duration(seconds: 5),
+              ),
         ),
       );
 

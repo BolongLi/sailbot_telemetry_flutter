@@ -39,15 +39,19 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    final serverListAsyncValue = ref.watch(serverListProvider);
-    serverListAsyncValue.when(
+    ref.listen<AsyncValue<List<Server>>>(serverListProvider, (previous, next) {
+      next.when(
         loading: () {},
         error: (error, stackTrace) {},
         data: (servers) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(selectedServerProvider.notifier).state = servers[0];
+            dev.log("3. Setting current server to: ${servers[0].name}");
           });
-        });
+        },
+      );
+    });
+    
     ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
       _networkComms = networkComms;
       ref.read(autonomousModeProvider.notifier).state = 'NONE';
@@ -103,6 +107,13 @@ class MyApp extends ConsumerWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+      // Disable Android's jank-ass overscroll animation
+      builder: (context, child) {
+        return ScrollConfiguration(
+          behavior: CustomScrollBehavior(),
+          child: child!,
+        );
+      },
       home: Scaffold(
           drawer: const NodesDrawer(),
           endDrawer: const SettingsDrawer(),
@@ -191,12 +202,20 @@ class MyApp extends ConsumerWidget {
           ])),
     );
   }
-
-  _updateRudderAngle(double angle) {
-    _networkComms?.setRudderAngle(angle);
-  }
-
+  
   _updateTrimtabAngle(double angle) {
     _networkComms?.setTrimtabAngle(angle);
+  }
+}
+
+class CustomScrollBehavior extends ScrollBehavior {
+  @override
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
+    return GlowingOverscrollIndicator(
+      axisDirection: details.direction,
+      color: Theme.of(context).primaryColor,
+      child: child,
+    );
   }
 }

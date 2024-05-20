@@ -51,6 +51,8 @@ class ConnectionNotifier extends StateNotifier<Color> {
       final lastServer = _ref.read(selectedServerProvider);
       _ref.read(selectedServerProvider.notifier).state = Server(name: "", address: "");
       _ref.read(selectedServerProvider.notifier).state = lastServer;
+      dev.log("Setting current server to: ${lastServer?.name}");
+
       if (_cameraActive) {
         _networkComms?.startVideoStreaming();
       }

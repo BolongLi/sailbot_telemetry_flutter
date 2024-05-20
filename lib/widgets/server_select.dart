@@ -25,10 +25,11 @@ class ServerSelect extends ConsumerWidget {
             selectedServer = servers.first;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(selectedServerProvider.notifier).state = selectedServer;
+              dev.log("1. Setting current server to: ${selectedServer?.name}");
             });
             return const Text("Loading...");
           } else {
-            dev.log("current server is ${currentServer.name}"); // ?
+            //dev.log("current server is ${currentServer.name}"); // ?
             if (currentServer.name == "") {
               return const Text("Loading...");
             }
@@ -38,6 +39,7 @@ class ServerSelect extends ConsumerWidget {
             onChanged: (Server? newValue) {
               if (newValue != null) {
                 ref.read(selectedServerProvider.notifier).state = newValue;
+                dev.log("2. Setting current server to: ${newValue.name}");
               }
             },
             items: servers.map<DropdownMenuItem<Server>>((Server server) {

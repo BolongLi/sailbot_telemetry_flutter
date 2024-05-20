@@ -17,7 +17,7 @@ class TerminalWidget extends ConsumerWidget {
         itemCount: logs.length,
         itemBuilder: (context, index) {
           final log = logs[logs.length - 1 - index]; // Reverse the order
-          final isError = log.contains('[ERROR]');
+          final isError = log.contains('[ERROR]') || log.contains('[FATAL]');
           final isWarn = log.contains('[WARN]');
           return Text(
             log,
