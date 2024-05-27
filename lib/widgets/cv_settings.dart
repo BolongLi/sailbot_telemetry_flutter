@@ -5,6 +5,7 @@ import 'package:sailbot_telemetry_flutter/widgets/camera_widget.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
+import 'dart:developer' as dev;
 
 class ObjectTypeDropdown extends StatelessWidget {
   final List<BuoyTypeInfo> buoyTypes;
@@ -176,6 +177,7 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
 
     return Column(
       children: <Widget>[
+        if (_selectedType != null)
         ObjectTypeDropdown(
           buoyTypes: _currentParameters.buoyTypes,
           selectedType: _selectedType!,
@@ -197,6 +199,7 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
               onChanged: (value) {
                 setState(() {
                   _currentParameters.circularityThreshold = value;
+                  dev.log("Setting cv parameters: $_currentParameters");
                   networkComms?.setCVParameters(_currentParameters);
                 });
               },

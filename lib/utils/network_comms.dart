@@ -169,6 +169,24 @@ class NetworkComms {
     }
   }
 
+  Timer? _retryTimer;
+  void _getInitialCVParameters(){
+    GetCVParametersRequest cvRequest = GetCVParametersRequest();
+      _getCVParametersServiceClient?.getCVParameters(cvRequest).then(
+        (response) {
+          dev.log("got cv response: ${response}");
+          if(response.hasParameters()){
+            ref.read(cvParametersProvider.notifier).update(response.parameters);
+          } else {
+            _retryTimer = Timer(const Duration(seconds: 1), () {
+              _getInitialCVParameters();
+              _retryTimer?.cancel();
+            });
+          }
+        },
+      );
+  }
+
   Future<void> _createClient() async {
     _timer?.cancel();
     //dev.log("about to create channel", name: 'network');
@@ -210,13 +228,7 @@ class NetworkComms {
               }
             });
             // Get current CV parameters
-            GetCVParametersRequest cvRequest = GetCVParametersRequest();
-            _getCVParametersServiceClient?.getCVParameters(cvRequest).then(
-              (response) {
-                dev.log("got cv response: ${response}");
-                ref.read(cvParametersProvider.notifier).update(response);
-              },
-            );
+            _getInitialCVParameters();
 
             _initializeBoatStateStream();
             break;
@@ -296,7 +308,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -311,7 +323,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -326,7 +338,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -343,7 +355,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -361,7 +373,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -378,7 +390,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -394,7 +406,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -411,7 +423,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -426,7 +438,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -441,7 +453,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log('onError');
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 
@@ -457,7 +469,7 @@ class NetworkComms {
     }, onError: (error) {
       dev.log(error);
     }).catchError((error) {
-      dev.log('catchError');
+      dev.log('caught error: ${error.toString()}');
     });
   }
 }
