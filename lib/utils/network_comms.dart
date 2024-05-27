@@ -40,6 +40,31 @@ class BoatStateNotifier extends StateNotifier<BoatState> {
   }
 }
 
+final videoSourceListProvider = StateNotifierProvider<VideoSourceListNotifier, List<String>>((ref) {
+  final boatState = ref.watch(boatStateProvider);
+  return VideoSourceListNotifier(boatState.availableVideoSources);
+});
+
+class VideoSourceListNotifier extends StateNotifier<List<String>> {
+  VideoSourceListNotifier(List<String> initialVideoSources) : super(initialVideoSources);
+
+  void update(List<String> newVideoSources) {
+    if (!listEquals(state, newVideoSources)) {
+      state = newVideoSources;
+    }
+  }
+}
+
+bool listEquals<T>(List<T>? list1, List<T>? list2) {
+  if (list1 == null && list2 == null) return true;
+  if (list1 == null || list2 == null) return false;
+  if (list1.length != list2.length) return false;
+  for (int i = 0; i < list1.length; i++) {
+    if (list1[i] != list2[i]) return false;
+  }
+  return true;
+}
+
 class MapImageNotifier extends StateNotifier<MapResponse?> {
   MapImageNotifier() : super(null);
 
