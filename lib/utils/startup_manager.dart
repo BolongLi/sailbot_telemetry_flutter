@@ -57,6 +57,7 @@ final ros2NetworkCommsProvider = StateNotifierProvider<ROS2NetworkCommsNotifier,
   ref.listen(selectedServerProvider, (__, selectedServer) { 
     if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
         dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
+    notifier.cancelLogStream();
     notifier.initializeClient(selectedServer.address);
     notifier.streamLogs();
     notifier.getLaunchfileList();
@@ -79,6 +80,10 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
 
   void streamLogs(){
     state?.streamLogs();
+  }
+
+  void cancelLogStream(){
+    state?.cancelLogStream();
   }
 
   void getLaunchfileList(){
