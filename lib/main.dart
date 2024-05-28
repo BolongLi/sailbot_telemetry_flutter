@@ -51,7 +51,7 @@ class MyApp extends ConsumerWidget {
         },
       );
     });
-    
+
     ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
       _networkComms = networkComms;
       ref.read(autonomousModeProvider.notifier).state = 'NONE';
@@ -193,16 +193,24 @@ class MyApp extends ConsumerWidget {
               ),
             ),
             Transform.translate(
-                offset: Offset(0, displayHeight(context) / 2 - 180),
-                child: const Align(
-                    //alignment: Alignment.bottomCenter,
+                offset: Offset(displayWidth(context)/2-180, displayHeight(context) - 180),
                     child: SizedBox(
-                        height: 40, width: 300, child: BallastSlider()))),
+                        height: 40,
+                        width: 450,
+                        child: Row(children: <Widget>[
+                          FloatingActionButton(
+                              onPressed: (){_networkComms?.requestTack();},
+                              child: const Text("Tack")),
+                          const SizedBox(
+                        height: 40,
+                        width: 250,
+                        child: BallastSlider())
+                        ]))),
             PathButtons(),
           ])),
     );
   }
-  
+
   _updateTrimtabAngle(double angle) {
     _networkComms?.setTrimtabAngle(angle);
   }

@@ -20,8 +20,20 @@ class LogNotifier extends StateNotifier<List<String>> {
   }
 }
 
+class LaunchfileListNotifier extends StateNotifier<List<String>?> {
+  LaunchfileListNotifier() : super(null);
+
+  void update(List<String>? newState) {
+    state = newState;
+  }
+}
+
 final logProvider = StateNotifierProvider<LogNotifier, List<String>>((ref) {
   return LogNotifier();
+});
+
+final launchfileListProvider = StateNotifierProvider<LaunchfileListNotifier, List<String>?>((ref) {
+  return LaunchfileListNotifier();
 });
 
 
@@ -47,6 +59,7 @@ final ros2NetworkCommsProvider = StateNotifierProvider<ROS2NetworkCommsNotifier,
         dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
     notifier.initializeClient(selectedServer.address);
     notifier.streamLogs();
+    notifier.getLaunchfileList();
     lastServerAddress = selectedServer.address;
   }
   });
@@ -66,6 +79,10 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
 
   void streamLogs(){
     state?.streamLogs();
+  }
+
+  void getLaunchfileList(){
+    state?.getLaunchfileList();
   }
 
   Future<void> _createClient(String serverAddress) async {
@@ -148,6 +165,7 @@ class ROS2NetworkComms {
 
   Future<void> startLaunch(String launchFile) async {
     final request = LaunchRequest()..launchFile = launchFile;
+    request.package = 'sailbot';
     try {
       final response = await ros2ControlClient!.start(request);
       ref.read(ros2ControlProvider.notifier).update(response.message);
@@ -181,6 +199,16 @@ class ROS2NetworkComms {
     }, onDone: () {
       dev.log("Log stream closed", name: 'ros2_network');
     });
+  }
+
+  getLaunchfileList() async {
+    try {
+      final response = await ros2ControlClient!.getLaunchFileNames(Empty());
+      ref.read(launchfileListProvider.notifier).update(response.names);
+      dev.log("launchfile names: ${response.names}", name: 'ros2_network');
+    } catch (e) {
+      dev.log("Failed to get launchfile names: $e", name: 'ros2_network');
+    }
   }
 
   void cancelLogStream() {

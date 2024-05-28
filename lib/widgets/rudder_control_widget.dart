@@ -4,6 +4,7 @@ import 'package:sailbot_telemetry_flutter/widgets/autonomous_mode_selector.dart'
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/widgets/draggable_circle.dart';
 import 'dart:math';
+import 'dart:io' show Platform;
 
 class RudderControlWidget extends ConsumerWidget {
   RudderControlWidget({super.key});
@@ -14,7 +15,7 @@ class RudderControlWidget extends ConsumerWidget {
       height: 75,
       lineLength: 60,
       radius: 7,
-      resetOnRelease: true,
+      resetOnRelease: Platform.isAndroid || Platform.isIOS ? true : false,
       isInteractive: true,
       callback: (){},
       key: GlobalKey<CircleDragWidgetState>(),

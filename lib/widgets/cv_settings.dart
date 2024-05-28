@@ -190,7 +190,7 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
           ),
         Row(
           children: [
-            SizedBox(width: 30, child: Text("CIR: ", textAlign: TextAlign.center)),
+            const SizedBox(width: 30, child: Text("CIR: ", textAlign: TextAlign.center)),
             Slider(
               activeColor: const Color.fromARGB(255, 0, 100, 255),
               value: _currentParameters.circularityThreshold,

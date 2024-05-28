@@ -472,4 +472,17 @@ class NetworkComms {
       dev.log('caught error: ${error.toString()}');
     });
   }
+
+  requestTack() {
+    RequestTackCommand command = RequestTackCommand();
+    _controlCommandServiceClient?.executeRequestTackCommand(command).then((response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Request tack command returned with response: $status",
+          name: 'network');
+    }, onError: (error) {
+      dev.log(error);
+    }).catchError((error) {
+      dev.log('caught error: ${error.toString()}');
+    });
+  }
 }
