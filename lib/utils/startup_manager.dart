@@ -53,26 +53,31 @@ String lastServerAddress = "dummy1";
 
 final ros2NetworkCommsProvider = StateNotifierProvider<ROS2NetworkCommsNotifier, ROS2NetworkComms?>((ref) {
   final notifier = ROS2NetworkCommsNotifier(ref);
-
-  ref.listen(selectedServerProvider, (__, selectedServer) { 
-    if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
-        dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
-    notifier.cancelLogStream();
-    notifier.initializeClient(selectedServer.address);
-    notifier.streamLogs();
-    notifier.getLaunchfileList();
-    lastServerAddress = selectedServer.address;
-  }
-  });
   return notifier;
 });
 
 class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
-  ROS2NetworkCommsNotifier(this.ref) : super(null);
+  ROS2NetworkCommsNotifier(this.ref) : super(null) {
+    initialize();
+  }
 
   final StateNotifierProviderRef ref;
   Timer? _retryTimer;
   static const int _retryInterval = 2; // Retry interval in seconds
+
+  void initialize(){
+    ref.listen(selectedServerProvider, (__, selectedServer) { 
+    dev.log("Got selected server for startup");
+    if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
+        dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
+    cancelLogStream();
+    initializeClient(selectedServer.address);
+    streamLogs();
+    getLaunchfileList();
+    lastServerAddress = selectedServer.address;
+  }
+  });
+  }
 
   void initializeClient(String serverAddress) {
     _createClient(serverAddress);

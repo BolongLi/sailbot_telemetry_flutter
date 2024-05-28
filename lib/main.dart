@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
+import 'package:sailbot_telemetry_flutter/utils/startup_manager.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/nodes_drawer.dart';
 import 'package:sailbot_telemetry_flutter/widgets/settings_drawer.dart';
@@ -57,7 +58,7 @@ class MyApp extends ConsumerWidget {
       ref.read(autonomousModeProvider.notifier).state = 'NONE';
     });
     _networkComms = ref.watch(networkCommsProvider);
-
+    ref.read(ros2NetworkCommsProvider.notifier).initialize();
     final trimTabKey = GlobalKey<CircleDragWidgetState>();
     final trimTabControlWidget = CircleDragWidget(
       width: 150,
