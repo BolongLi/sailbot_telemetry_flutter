@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_widget.dart';
 import 'package:sailbot_telemetry_flutter/widgets/camera_widget.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
@@ -38,18 +39,33 @@ class ObjectTypeDropdown extends StatelessWidget {
   }
 }
 
-class HSVSliders extends StatelessWidget {
+final buoyDiameterProviders = <String, StateProvider<String>>{};
+
+void initializeBuoyDiameterProviders(List<BuoyTypeInfo> buoyTypes) {
+  for (var buoyType in buoyTypes) {
+    if (!buoyDiameterProviders.containsKey(buoyType.name)) {
+      buoyDiameterProviders[buoyType.name] = StateProvider<String>((ref) => buoyType.buoyDiameter.toString());
+    }
+  }
+}
+
+class HSVSliders extends ConsumerWidget {
   final HSVBounds hsvBounds;
+  final StateProvider<String> buoyDiameterProvider;
   final Function(HSVBounds) onBoundsChanged;
+  final Function(double) onDiameterChanged;
 
   const HSVSliders({
     Key? key,
     required this.hsvBounds,
+    required this.buoyDiameterProvider,
     required this.onBoundsChanged,
+    required this.onDiameterChanged,
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final buoyDiameter = ref.watch(buoyDiameterProvider);
     return Column(
       children: <Widget>[
         SliderRow(
@@ -93,6 +109,32 @@ class HSVSliders extends StatelessWidget {
           onChanged: (value) {
             onBoundsChanged(hsvBounds..upperV = value);
           },
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            children: [
+              const SizedBox(width: 25, child: Text("Dia", textAlign: TextAlign.center)),
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 8.0)),
+              Expanded(
+                child: TextField(
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                  //border: OutlineInputBorder(),
+                  //labelText: 'Diameter: $buoyDiameter',
+                  hintText: buoyDiameter),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+                  ],
+                  onChanged: (value) {
+                    ref.read(buoyDiameterProvider.notifier).state = value;
+                    final parsedValue = double.tryParse(value) ?? 0;
+                    onDiameterChanged(parsedValue);
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -147,6 +189,7 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
     super.initState();
     if (_currentParameters.buoyTypes.isNotEmpty) {
       _selectedType = _currentParameters.buoyTypes.first;
+      initializeBuoyDiameterProviders(_currentParameters.buoyTypes);
     }
   }
 
@@ -163,6 +206,16 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
     });
   }
 
+  void _updateDiameter(double newDiameter) {
+    setState(() {
+      if (_selectedType != null) {
+        ref.read(buoyDiameterProviders[_selectedType!.name]!.notifier).state = newDiameter.toString();
+        _selectedType?.buoyDiameter = newDiameter;
+        ref.read(networkCommsProvider)?.setCVParameters(_currentParameters);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     CVParameters? cvParameters = ref.watch(cvParametersProvider);
@@ -170,6 +223,7 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
       _currentParameters = cvParameters;
       if (_selectedType == null && _currentParameters.buoyTypes.isNotEmpty) {
         _selectedType = _currentParameters.buoyTypes.first;
+        initializeBuoyDiameterProviders(_currentParameters.buoyTypes);
       }
     }
 
@@ -178,15 +232,17 @@ class _CVSettingsState extends ConsumerState<CVSettings> {
     return Column(
       children: <Widget>[
         if (_selectedType != null)
-        ObjectTypeDropdown(
-          buoyTypes: _currentParameters.buoyTypes,
-          selectedType: _selectedType!,
-          onTypeChanged: _updateSelectedType,
-        ),
+          ObjectTypeDropdown(
+            buoyTypes: _currentParameters.buoyTypes,
+            selectedType: _selectedType!,
+            onTypeChanged: _updateSelectedType,
+          ),
         if (_selectedType != null)
           HSVSliders(
             hsvBounds: _selectedType!.hsvBounds,
+            buoyDiameterProvider: buoyDiameterProviders[_selectedType!.name]!,
             onBoundsChanged: _updateBounds,
+            onDiameterChanged: _updateDiameter,
           ),
         Row(
           children: [
