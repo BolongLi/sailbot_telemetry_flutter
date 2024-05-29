@@ -7,7 +7,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/control.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/node_restart.pbgrpc.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/video.pbgrpc.dart';
-
+import 'package:sailbot_telemetry_flutter/widgets/video_source_select.dart';
 import 'dart:developer' as dev; //log() conflicts with math
 
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart' as gh;
@@ -108,6 +108,8 @@ class NetworkCommsNotifier extends StateNotifier<NetworkComms?> {
   void changeServer(gh.Server selectedServer) {
     state?.dispose(); // Dispose the old instance
     state = NetworkComms(selectedServer.address, ref); // Create a new instance
+    String source = ref.read(videoSourceProvider.notifier).state;
+    state?.setCameraSource(source);
     dev.log(
         'NetworkComms instance changed to new server: ${selectedServer.address}');
   }

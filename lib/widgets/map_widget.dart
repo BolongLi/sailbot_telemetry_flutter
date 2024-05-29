@@ -7,6 +7,35 @@ import 'package:latlong2/latlong.dart';
 import 'dart:developer' as dev;
 import 'dart:typed_data';
 
+class MapPositionState {
+  final LatLng center;
+  final double zoom;
+
+  MapPositionState({required this.center, required this.zoom});
+
+  MapPositionState copyWith({LatLng? center, double? zoom}) {
+    return MapPositionState(
+      center: center ?? this.center,
+      zoom: zoom ?? this.zoom,
+    );
+  }
+}
+
+class MapPositionNotifier extends StateNotifier<MapPositionState> {
+  MapPositionNotifier()
+      : super(MapPositionState(center: LatLng(42.277062, -71.756299), zoom: 15));
+
+  void updatePosition(LatLng center, double zoom) {
+    state = state.copyWith(center: center, zoom: zoom);
+  }
+}
+
+final mapPositionProvider =
+    StateNotifierProvider<MapPositionNotifier, MapPositionState>((ref) {
+  return MapPositionNotifier();
+});
+
+
 class MapState {
   final bool showPathButton;
   final TapPosition?
@@ -242,15 +271,31 @@ class MapImageView extends ConsumerWidget {
   }
 }
 
-class MapView extends ConsumerWidget {
+class MapView extends ConsumerStatefulWidget {
   const MapView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MapView> createState() => _MapViewState();
+}
+
+class _MapViewState extends ConsumerState<MapView> {
+  late final MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mapPosition = ref.watch(mapPositionProvider);
+
     return FlutterMap(
+      mapController: _mapController,
       options: MapOptions(
-        initialCenter: const LatLng(42.277062, -71.756299),
-        initialZoom: 15,
+        initialCenter: mapPosition.center,
+        initialZoom: mapPosition.zoom,
         interactionOptions: InteractionOptions(
           flags: InteractiveFlag.all - InteractiveFlag.rotate,
           cursorKeyboardRotationOptions: CursorKeyboardRotationOptions(
@@ -268,7 +313,10 @@ class MapView extends ConsumerWidget {
               .read(mapStateProvider.notifier)
               .setTapDetails(tapPosition, latlng);
         },
-        onPositionChanged: (_, __) {
+        onPositionChanged: (MapPosition position, bool hasGesture) {
+          ref
+              .read(mapPositionProvider.notifier)
+              .updatePosition(position.center!, position.zoom!);
           ref.read(mapStateProvider.notifier).resetTapDetails();
         },
       ),
