@@ -64,34 +64,37 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
   final StateNotifierProviderRef ref;
   Timer? _retryTimer;
   static const int _retryInterval = 2; // Retry interval in seconds
+  ProviderSubscription<dynamic>? _serverSubscription; // Correct type for subscription management
 
-  void initialize(){
-    ref.listen(selectedServerProvider, (__, selectedServer) { 
-    dev.log("Got selected server for startup");
-    if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
+  void initialize() {
+    // Dispose any existing subscription before creating a new one
+    _serverSubscription?.close();
+    _serverSubscription = ref.listen(selectedServerProvider, (previous, selectedServer) {
+      dev.log("Got selected server for startup");
+      if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
         dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
-    cancelLogStream();
-    initializeClient(selectedServer.address);
-    streamLogs();
-    getLaunchfileList();
-    lastServerAddress = selectedServer.address;
-  }
-  });
+        cancelLogStream();
+        initializeClient(selectedServer.address);
+        streamLogs();
+        getLaunchfileList();
+        lastServerAddress = selectedServer.address;
+      }
+    });
   }
 
   void initializeClient(String serverAddress) {
     _createClient(serverAddress);
   }
 
-  void streamLogs(){
+  void streamLogs() {
     state?.streamLogs();
   }
 
-  void cancelLogStream(){
+  void cancelLogStream() {
     state?.cancelLogStream();
   }
 
-  void getLaunchfileList(){
+  void getLaunchfileList() {
     state?.getLaunchfileList();
   }
 
@@ -107,6 +110,7 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
 
   @override
   void dispose() {
+    _serverSubscription?.close(); // Ensure we clean up the listener
     state?.dispose();
     super.dispose();
   }
