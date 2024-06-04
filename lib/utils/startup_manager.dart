@@ -32,12 +32,13 @@ final logProvider = StateNotifierProvider<LogNotifier, List<String>>((ref) {
   return LogNotifier();
 });
 
-final launchfileListProvider = StateNotifierProvider<LaunchfileListNotifier, List<String>?>((ref) {
+final launchfileListProvider =
+    StateNotifierProvider<LaunchfileListNotifier, List<String>?>((ref) {
   return LaunchfileListNotifier();
 });
 
-
-final ros2ControlProvider = StateNotifierProvider<ROS2ControlNotifier, String?>((ref) {
+final ros2ControlProvider =
+    StateNotifierProvider<ROS2ControlNotifier, String?>((ref) {
   return ROS2ControlNotifier();
 });
 
@@ -51,7 +52,8 @@ class ROS2ControlNotifier extends StateNotifier<String?> {
 
 String lastServerAddress = "dummy1";
 
-final ros2NetworkCommsProvider = StateNotifierProvider<ROS2NetworkCommsNotifier, ROS2NetworkComms?>((ref) {
+final ros2NetworkCommsProvider =
+    StateNotifierProvider<ROS2NetworkCommsNotifier, ROS2NetworkComms?>((ref) {
   final notifier = ROS2NetworkCommsNotifier(ref);
   return notifier;
 });
@@ -64,15 +66,20 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
   final StateNotifierProviderRef ref;
   Timer? _retryTimer;
   static const int _retryInterval = 2; // Retry interval in seconds
-  ProviderSubscription<dynamic>? _serverSubscription; // Correct type for subscription management
+  ProviderSubscription<dynamic>?
+      _serverSubscription; // Correct type for subscription management
 
   void initialize() {
     // Dispose any existing subscription before creating a new one
     _serverSubscription?.close();
-    _serverSubscription = ref.listen(selectedServerProvider, (previous, selectedServer) {
+    _serverSubscription =
+        ref.listen(selectedServerProvider, (previous, selectedServer) {
       dev.log("Got selected server for startup");
-      if (selectedServer != null && selectedServer.address != lastServerAddress && selectedServer.address != "") {
-        dev.log("Changing server: ${selectedServer.address}, $lastServerAddress");
+      if (selectedServer != null &&
+          selectedServer.address != lastServerAddress &&
+          selectedServer.address != "") {
+        dev.log(
+            "Changing server: ${selectedServer.address}, $lastServerAddress");
         cancelLogStream();
         initializeClient(selectedServer.address);
         streamLogs();
@@ -104,7 +111,8 @@ class ROS2NetworkCommsNotifier extends StateNotifier<ROS2NetworkComms?> {
       state = client;
       dev.log('Connected to ROS2 server at $serverAddress');
     } catch (e) {
-      dev.log('Failed to connect to ROS2 server at $serverAddress. Retrying in $_retryInterval seconds...');
+      dev.log(
+          'Failed to connect to ROS2 server at $serverAddress. Retrying in $_retryInterval seconds...');
     }
   }
 
@@ -139,11 +147,10 @@ class ROS2NetworkComms {
           credentials: ChannelCredentials.insecure(),
           idleTimeout: Duration(minutes: 1),
           connectTimeout: Duration(seconds: 10),
-          
           keepAlive: ClientKeepAliveOptions(
-              pingInterval: Duration(seconds: 10), 
-              timeout: Duration(seconds: 5),
-              ),
+            pingInterval: Duration(seconds: 10),
+            timeout: Duration(seconds: 5),
+          ),
         ),
       );
 
@@ -162,7 +169,8 @@ class ROS2NetworkComms {
             dev.log("Connection lost, transient failure", name: 'ros2_network');
             break;
           case ConnectionState.shutdown:
-            dev.log("Connection is shutting down or shut down.", name: 'ros2_network');
+            dev.log("Connection is shutting down or shut down.",
+                name: 'ros2_network');
             break;
         }
       }, onError: (error) {
@@ -183,7 +191,8 @@ class ROS2NetworkComms {
     try {
       final response = await ros2ControlClient!.start(request);
       ref.read(ros2ControlProvider.notifier).update(response.message);
-      dev.log("Start launch response: ${response.message}", name: 'ros2_network');
+      dev.log("Start launch response: ${response.message}",
+          name: 'ros2_network');
     } catch (e) {
       dev.log("Failed to start launch: $e", name: 'ros2_network');
     }
@@ -193,7 +202,8 @@ class ROS2NetworkComms {
     try {
       final response = await ros2ControlClient!.stop(Empty());
       ref.read(ros2ControlProvider.notifier).update(response.message);
-      dev.log("Stop launch response: ${response.message}", name: 'ros2_network');
+      dev.log("Stop launch response: ${response.message}",
+          name: 'ros2_network');
     } catch (e) {
       dev.log("Failed to stop launch: $e", name: 'ros2_network');
     }

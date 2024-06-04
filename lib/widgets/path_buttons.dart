@@ -8,6 +8,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/widgets/icons.dart';
 import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
 import 'dart:math';
+import 'dart:developer' as dev;
 
 class PathButtons extends ConsumerStatefulWidget {
   PathButtons({Key? key}) : super(key: key);
@@ -21,7 +22,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
   late TextEditingController lonController;
   FocusNode latFocusNode = FocusNode();
   FocusNode lonFocusNode = FocusNode();
-  LatLng? latlng;
+  LatLng latlng = LatLng(0, 0);
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
     final mapState = ref.watch(mapStateProvider);
     final pressLat = mapState.mapPressLatLng?.latitude;
     final pressLong = mapState.mapPressLatLng?.longitude;
+    latlng = LatLng(pressLat ?? 0, pressLong ?? 0);
 
     if (!mapState.showPathButton || !isMapVisible) {
       latController.text = "";
@@ -93,8 +95,8 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
                   ],
                   onEditingComplete: () {
-                    latlng = LatLng(double.parse(latController.text),
-                        latlng?.longitude ?? pressLong ?? 0);
+                    latlng = LatLng(
+                        double.parse(latController.text), latlng.longitude);
                     FocusScope.of(context)
                         .requestFocus(lonFocusNode); // Move to next field
                   },
@@ -115,8 +117,8 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
                     FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
                   ],
                   onEditingComplete: () {
-                    latlng = LatLng(latlng?.latitude ?? pressLat ?? 0,
-                        double.parse(lonController.text));
+                    latlng = LatLng(
+                        latlng.latitude, double.parse(lonController.text));
                     FocusScope.of(context).unfocus(); // Unfocus the field
                   },
                 ),
@@ -126,8 +128,8 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
           Column(children: <Widget>[
             FloatingActionButton(
               onPressed: () {
-                _addWaypoint(WaypointType.WAYPOINT_TYPE_INTERSECT,
-                    latlng ?? LatLng(pressLat ?? 0, pressLong ?? 0));
+                updateLatLngFromTextFields();
+                _addWaypoint(WaypointType.WAYPOINT_TYPE_INTERSECT, latlng);
               },
               child: Transform(
                 transform: Matrix4.rotationZ(pi / 4),
@@ -137,8 +139,8 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
             ),
             FloatingActionButton(
               onPressed: () {
-                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_RIGHT,
-                    latlng ?? LatLng(pressLat ?? 0, pressLong ?? 0));
+                updateLatLngFromTextFields();
+                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_RIGHT, latlng);
               },
               child: Transform(
                 transform: Matrix4.rotationX(pi),
@@ -148,8 +150,8 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
             ),
             FloatingActionButton(
               onPressed: () {
-                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_LEFT,
-                    latlng ?? LatLng(pressLat ?? 0, pressLong ?? 0));
+                updateLatLngFromTextFields();
+                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_LEFT, latlng);
               },
               child: Transform(
                 transform: Matrix4.rotationZ(pi),
@@ -163,12 +165,22 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
     );
   }
 
-  void _addWaypoint(WaypointType type, LatLng pos) {
+  void updateLatLngFromTextFields() {
+    double? latitude = double.tryParse(latController.text);
+    double? longitude = double.tryParse(lonController.text);
+
+    if (latitude != null && longitude != null) {
+      latlng = LatLng(latitude, longitude);
+    }
+  }
+
+  void _addWaypoint(WaypointType type, LatLng? pos) {
+    dev.log("Adding waypoint: ${pos}");
     var tappedPoint = Waypoint();
     tappedPoint.type = type;
     var point = Point();
-    point.latitude = pos.latitude;
-    point.longitude = pos.longitude;
+    point.latitude = pos?.latitude ?? 0;
+    point.longitude = pos?.longitude ?? 0;
     tappedPoint.point = point;
 
     ref.read(networkCommsProvider)?.addWaypoint(tappedPoint);
