@@ -194,19 +194,19 @@ class MyApp extends ConsumerWidget {
               ),
             ),
             Transform.translate(
-                offset: Offset(displayWidth(context)/2-180, displayHeight(context) - 180),
-                    child: SizedBox(
-                        height: 40,
-                        width: 450,
-                        child: Row(children: <Widget>[
-                          FloatingActionButton(
-                              onPressed: (){_networkComms?.requestTack();},
-                              child: const Text("Tack")),
-                          const SizedBox(
-                        height: 40,
-                        width: 250,
-                        child: BallastSlider())
-                        ]))),
+                offset: Offset(displayWidth(context) / 2 - 180,
+                    displayHeight(context) - 240),
+                child: SizedBox(
+                  height: 70,
+                  width: 90,
+                  child: FloatingActionButton(
+                      onPressed: () {
+                        _networkComms?.requestTack();
+                      },
+                      child: const Text("Tack")),
+                  // const SizedBox(
+                  //     height: 40, width: 250, child: BallastSlider())
+                )),
             PathButtons(),
           ])),
     );
