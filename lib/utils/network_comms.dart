@@ -317,7 +317,7 @@ class NetworkComms {
   setRudderAngle(double angle) {
     RudderCommand command = RudderCommand();
     command.rudderControlValue = angle;
-    dev.log("sending rudder command", name: "network");
+    dev.log("sending rudder command $angle", name: "network");
     _controlCommandServiceClient?.executeRudderCommand(command).then((response) {
       ControlExecutionStatus status = response.executionStatus;
       dev.log("Rudder control command returned with response: $status",

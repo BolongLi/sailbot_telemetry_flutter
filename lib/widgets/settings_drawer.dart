@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
 import 'package:sailbot_telemetry_flutter/widgets/cv_settings.dart';
+import 'package:sailbot_telemetry_flutter/widgets/controller_toggle.dart';
 import 'dart:developer' as dev;
+import 'dart:io';
 
 final vfForwardMagnitudeProvider = StateProvider<String>((ref) => '2.0');
 final rudderASProvider = StateProvider<String>((ref) => '0.05');
@@ -70,6 +72,7 @@ class SettingsDrawer extends ConsumerWidget {
             ),
           ),
           const CVSettings(),
+          ControllerToggle(),
         ],
       ),
     );
