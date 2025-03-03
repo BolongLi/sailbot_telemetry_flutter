@@ -396,6 +396,25 @@ class NetworkComms {
     });
   }
 
+  replaceWaypoint(
+    Waypoint newWaypoint,
+    Waypoint oldWaypoint,
+  ) {
+    ReplaceWaypointCommand command = ReplaceWaypointCommand();
+    command.newWaypoint = newWaypoint;
+    command.oldWaypoint = oldWaypoint;
+    _controlCommandServiceClient?.executeReplaceWaypointCommand(command).then(
+        (response) {
+      ControlExecutionStatus status = response.executionStatus;
+      dev.log("Replace waypoint control command returned with response: $status",
+          name: 'network');
+    }, onError: (error) {
+      dev.log('onError');
+    }).catchError((error) {
+      dev.log('caught error: ${error.toString()}');
+    });
+  }
+
   setAutonomousMode(AutonomousMode mode) {
     AutonomousModeCommand command = AutonomousModeCommand();
     command.autonomousMode = mode;

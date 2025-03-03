@@ -36,11 +36,14 @@ class ControllerToggle extends ConsumerWidget {
     );
   }
 
-  void _updateControlAngles(int rudderStickValue, int trimTabStickValue) {
-  double rudderAngle = (rudderStickValue / 32767) * 1.5;
-  double trimTabAngle = (trimTabStickValue / 32767) * 1.5;
-  _networkComms?.setRudderAngle(rudderAngle);
-  _networkComms?.setTrimtabAngle(trimTabAngle);
+  void _updateControlAngles(int rudderStickValue, int trimTabStickValue, String autoState) {
+    double rudderAngle = (rudderStickValue / 32767) * 1.5;
+    double trimTabAngle = (trimTabStickValue / 32767) * 1.5;
+    _networkComms?.setRudderAngle(rudderAngle);
+    _networkComms?.setTrimtabAngle(trimTabAngle);
+    if (autoState != "noChange"){
+      //pass change state
+    }
   }
 }
 

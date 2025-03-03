@@ -44,6 +44,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
   Widget build(BuildContext context) {
     final isMapVisible = ref.watch(cameraToggleProvider);
     final mapState = ref.watch(mapStateProvider);
+    final replaceWaypoint = ref.watch(replaceWaypointProvider);
     final pressLat = mapState.mapPressLatLng?.latitude;
     final pressLong = mapState.mapPressLatLng?.longitude;
     latlng = LatLng(pressLat ?? 0, pressLong ?? 0);
@@ -129,7 +130,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
             FloatingActionButton(
               onPressed: () {
                 updateLatLngFromTextFields();
-                _addWaypoint(WaypointType.WAYPOINT_TYPE_INTERSECT, latlng);
+                _addWaypoint(WaypointType.WAYPOINT_TYPE_INTERSECT, latlng, replaceWaypoint);
               },
               child: Transform(
                 transform: Matrix4.rotationZ(pi / 4),
@@ -140,7 +141,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
             FloatingActionButton(
               onPressed: () {
                 updateLatLngFromTextFields();
-                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_RIGHT, latlng);
+                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_RIGHT, latlng, replaceWaypoint);
               },
               child: Transform(
                 transform: Matrix4.rotationX(pi),
@@ -151,7 +152,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
             FloatingActionButton(
               onPressed: () {
                 updateLatLngFromTextFields();
-                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_LEFT, latlng);
+                _addWaypoint(WaypointType.WAYPOINT_TYPE_CIRCLE_LEFT, latlng, replaceWaypoint);
               },
               child: Transform(
                 transform: Matrix4.rotationZ(pi),
@@ -174,8 +175,7 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
     }
   }
 
-  void _addWaypoint(WaypointType type, LatLng? pos) {
-    dev.log("Adding waypoint: ${pos}");
+  void _addWaypoint(WaypointType type, LatLng? pos, Waypoint? replaceWaypoint) {
     var tappedPoint = Waypoint();
     tappedPoint.type = type;
     var point = Point();
@@ -183,7 +183,14 @@ class _PathButtonsState extends ConsumerState<PathButtons> {
     point.longitude = pos?.longitude ?? 0;
     tappedPoint.point = point;
 
-    ref.read(networkCommsProvider)?.addWaypoint(tappedPoint);
-    ref.read(mapStateProvider.notifier).resetTapDetails();
+    if(replaceWaypoint != null){
+      dev.log("Replacing waypoint: ${pos}");
+      ref.read(networkCommsProvider)?.replaceWaypoint(tappedPoint, replaceWaypoint);
+    }
+    else{
+      dev.log("Adding waypoint: ${pos}");
+      ref.read(networkCommsProvider)?.addWaypoint(tappedPoint);
+    }
+    ref.read(mapStateProvider.notifier).resetTapDetails(ref);
   }
 }

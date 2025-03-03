@@ -4,6 +4,7 @@ import 'package:sailbot_telemetry_flutter/utils/utils.dart';
 import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'dart:developer' as dev;
 import 'dart:typed_data';
 
@@ -19,6 +20,15 @@ class MapPositionState {
       zoom: zoom ?? this.zoom,
     );
   }
+}
+
+final replaceWaypointProvider = StateProvider<Waypoint?>((ref) => null);
+
+void _onWaypointPress(Waypoint waypoint, WidgetRef ref) {
+  dev.log("Selected Old Waypoint!");
+  ref.read(replaceWaypointProvider.notifier).state = waypoint;
+  // Show a dialog, update state, etc.
+
 }
 
 class MapPositionNotifier extends StateNotifier<MapPositionState> {
@@ -74,7 +84,8 @@ class MapStateNotifier extends StateNotifier<MapState> {
         mapPressLatLng: latLng);
   }
 
-  void resetTapDetails() {
+  void resetTapDetails(WidgetRef ref) {
+    ref.read(replaceWaypointProvider.notifier).state = null;
     state = state.copyWith(
         showPathButton: false, mapPressPosition: null, mapPressLatLng: null);
   }
@@ -102,10 +113,14 @@ class BoatStateView extends ConsumerWidget {
     // Set up map markers
     //waypoints
     var boatWaypoints = boatState.currentWaypoints.waypoints;
-    for (var waypoint in boatWaypoints) {
+    for (final (waypoint) in boatWaypoints) {
       markers.add(Marker(
           point: LatLng(waypoint.point.latitude, waypoint.point.longitude),
-          child: const Icon(Icons.star_border_purple500_rounded)));
+          child: GestureDetector(
+            onLongPress: () => _onWaypointPress(waypoint, ref),
+            child: const Icon(Icons.star_border_purple500_rounded)
+          )));
+          //child: const Icon(Icons.star_border_purple500_rounded)));
     }
     for (var buoy in boatState.buoyPositions) {
       markers.add(Marker(
@@ -303,10 +318,12 @@ class _MapViewState extends ConsumerState<MapView> {
           ),
         ),
         onTap: (_, __) {
-          ref.read(mapStateProvider.notifier).resetTapDetails();
+          ref.read(mapStateProvider.notifier).resetTapDetails(ref);
         },
         onSecondaryTap: (tapPosition, point) {
-          ref.read(mapStateProvider.notifier).setTapDetails(tapPosition, point);
+          ref
+              .read(mapStateProvider.notifier)
+              .setTapDetails(tapPosition, point);
         },
         onLongPress: (tapPosition, latlng) {
           ref
@@ -317,7 +334,7 @@ class _MapViewState extends ConsumerState<MapView> {
           ref
               .read(mapPositionProvider.notifier)
               .updatePosition(position.center!, position.zoom!);
-          ref.read(mapStateProvider.notifier).resetTapDetails();
+          ref.read(mapStateProvider.notifier).resetTapDetails(ref);
         },
       ),
       children: [
