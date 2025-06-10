@@ -176,7 +176,7 @@ class MyApp extends ConsumerWidget {
               ),
             ),
             Transform.translate(
-              offset: Offset(displayWidth(context) / 9, -40),
+              offset: Offset(displayWidth(context) / 11, -40),
               child: Align(
                 alignment: Alignment.bottomLeft,
                 // centerPoint:
@@ -185,7 +185,7 @@ class MyApp extends ConsumerWidget {
               ),
             ),
             Transform.translate(
-              offset: Offset(-displayWidth(context) / 9, -40),
+              offset: Offset(-displayWidth(context) / 10, -40),
               child: Align(
                 alignment: Alignment.bottomRight,
                 // centerPoint:
