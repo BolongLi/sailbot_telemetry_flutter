@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,9 @@ import 'package:sailbot_telemetry_flutter/widgets/wind_direction_display.dart';
 import 'package:sailbot_telemetry_flutter/widgets/align_positioned.dart';
 import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boat_state.pb.dart';
 import 'package:sailbot_telemetry_flutter/widgets/rudder_control_widget.dart';
+import 'package:gamepads/gamepads.dart';
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'dart:developer' as dev;
 
@@ -32,13 +37,135 @@ void main() async {
 
 final GlobalKey<ScaffoldState> _scaffoldState = GlobalKey<ScaffoldState>();
 
-class MyApp extends ConsumerWidget {
-  MyApp({super.key});
 
+class InputController {
+  // Pressed states
+  bool rudderLeft = false;
+  bool rudderRight = false;
+  bool trimtabLeft = false;
+  bool trimtabRight = false;
+  bool centerRudder = false;
+  bool centerTrim = false;
+
+  // Analog storage if you want
+  double leftX = 0.0;
+  double leftY = 0.0;
+
+  StreamSubscription? _sub;
+  Timer? _tick;
+  double rudderAngle = 0.0;
+  double trimtabAngle = 0.0;
+
+  // External callbacks (inject your NetworkComms)
+  void Function(double)? onRudder;
+  void Function(double)? onTrimtab;
+  void Function()? onTack;
+  void Function(String)? onAutoMode;
+
+  // Call once (e.g., in main widget init or provider init)
+  void start() {
+    // 1) Listen to events -> update pressed/axis states
+    _sub = Gamepads.events.listen((event) {
+      final k = event.key.toString();
+      final v = event.value; // 0/1 for buttons, or analog for axes
+
+      // SAFETY: Only act on buttons you care about.
+      // Map your button numbers clearly (example mapping):
+      // '6' = rudderRight, '7' = rudderLeft
+      // '1' = trimtabRight, '3' = trimtabLeft
+      // '10' = center rudder, '2' = center trim
+
+      if (k == '6') rudderRight = (v == 1);
+      if (k == '7') rudderLeft  = (v == 1);
+
+      if (k == '1') trimtabRight = (v == 1);
+      if (k == '3') trimtabLeft  = (v == 1);
+
+      if (k == '10') centerRudder = (v == 1);
+      if (k == '11')  centerTrim   = (v == 1);
+
+      // if (k == '8' && v == 1) onAutoMode?.call('NONE');
+      // if (k == '9' && v == 1) onAutoMode?.call('BALLAST');
+      // if (k == '11' && v == 1) onAutoMode?.call('TRIMTAB');
+      // if (k == '12' && v == 1) onAutoMode?.call('FULL');
+    });
+
+    const dt = Duration(milliseconds: 33); // ~30 FPS 
+    _tick = Timer.periodic(dt, (_) {
+      const step = 0.1; // increment per tick; tune this
+      const minAngle = -1.4;
+      const maxAngle =  1.4;
+
+      if (centerRudder) rudderAngle = 0.0;
+      if (centerTrim)   trimtabAngle = 0.0;
+
+      if (rudderRight) rudderAngle += step;
+      if (rudderLeft)  rudderAngle -= step;
+
+      if (trimtabRight) trimtabAngle += step;
+      if (trimtabLeft)  trimtabAngle -= step;
+
+      // Clamp
+      rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
+      trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
+
+      onRudder?.call(rudderAngle);
+      onTrimtab?.call(trimtabAngle);
+    });
+  }
+
+  void stop() {
+    _sub?.cancel();
+    _sub = null;
+    _tick?.cancel();
+    _tick = null;
+  }
+
+}
+
+// Riverpod provider
+final inputControllerProvider = Provider<InputController>((ref) {
+  final c = InputController();
+  ref.onDispose(c.stop);
+  return c;
+});
+
+
+class MyApp extends ConsumerStatefulWidget {
+  const MyApp({super.key});
+  @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+
+class _MyAppState extends ConsumerState<MyApp> {
   NetworkComms? _networkComms;
+  @override
+  void initState() {
+    super.initState();
+
+    final ic = ref.read(inputControllerProvider);
+
+    // Inject callbacks to talk to your network layer
+    ic.onRudder = (angle) => _networkComms?.setRudderAngle(angle);
+    ic.onTrimtab = (angle) => _networkComms?.setTrimtabAngle(angle);
+    ic.onTack = () => _networkComms?.requestTack();
+    ic.onAutoMode = (mode) {
+      final notifier = ref.read(autonomousModeProvider.notifier);
+      notifier.state = mode; // 'NONE' | 'BALLAST' | 'TRIMTAB' | 'FULL'
+    };
+
+    ic.start(); // begin listening + ticking
+  }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    ref.read(inputControllerProvider).stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     ref.listen<AsyncValue<List<Server>>>(serverListProvider, (previous, next) {
       next.when(
@@ -100,6 +227,12 @@ class MyApp extends ConsumerWidget {
         trimTabControlWidget.setInteractive(false);
         rudderControlWidget.setInteractive(false);
       }
+    });
+
+    Gamepads.events.listen((event) {
+      // ...
+      // print(event.key);
+      // print(event.value);
     });
 
     return MaterialApp(
