@@ -401,6 +401,7 @@ class NetworkComms {
   setAutonomousMode(AutonomousMode mode) {
     AutonomousModeCommand command = AutonomousModeCommand();
     command.autonomousMode = mode;
+    // print(command);
     _controlCommandServiceClient
         ?.executeAutonomousModeCommand(command)
         .then((response) {
