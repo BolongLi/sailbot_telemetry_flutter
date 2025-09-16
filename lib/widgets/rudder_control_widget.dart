@@ -49,4 +49,8 @@ class RudderControlWidget extends ConsumerWidget {
   setInteractive(bool interactive){
     _controller.setInteractive(interactive);
   }
+  
+  void setAngle(double radians) {
+    _controller.setAngle(radians);
+  }
 }

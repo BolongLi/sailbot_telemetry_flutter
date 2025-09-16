@@ -26,7 +26,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/widgets/rudder_control_widget.dart';
 import 'package:gamepads/gamepads.dart';
 import 'dart:async';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 
 import 'dart:developer' as dev;
 
@@ -262,6 +262,19 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> {
   NetworkComms? _networkComms;
+  final GlobalKey<CircleDragWidgetState> _trimTabKey =GlobalKey<CircleDragWidgetState>();
+  late final RudderControlWidget _rudderControlWidget = RudderControlWidget();
+  late final CircleDragWidget _trimTabControlWidget = CircleDragWidget(
+  width: 150,
+  height: 75,
+  lineLength: 60,
+  radius: 7,
+  resetOnRelease: false,
+  isInteractive: true,
+  callback: _updateTrimtabAngle,
+  key: _trimTabKey,
+  );
+  
   @override
   void initState() {
     super.initState();
@@ -269,8 +282,8 @@ class _MyAppState extends ConsumerState<MyApp> {
     final ic = ref.read(inputControllerProvider);
 
     // Inject callbacks to talk to your network layer
-    ic.onRudder = (angle) => _networkComms?.setRudderAngle(angle);
-    ic.onTrimtab = (angle) => _networkComms?.setTrimtabAngle(angle);
+    ic.onRudder = (angle) => _updateRudderAngle(angle); // _networkComms?.setRudderAngle(angle);
+    ic.onTrimtab = (angle) => _updateTrimtabAngle(angle); // _networkComms?.setTrimtabAngle(angle);
     ic.onTack = () => _networkComms?.requestTack();
     ic.onAutoMode = (mode) {
       final notifier = ref.read(autonomousModeProvider.notifier);
@@ -312,19 +325,19 @@ class _MyAppState extends ConsumerState<MyApp> {
     // });
     _networkComms = ref.watch(networkCommsProvider);
     ref.read(ros2NetworkCommsProvider.notifier).initialize();
-    final trimTabKey = GlobalKey<CircleDragWidgetState>();
-    final trimTabControlWidget = CircleDragWidget(
-      width: 150,
-      height: 75,
-      lineLength: 60,
-      radius: 7,
-      resetOnRelease: false,
-      isInteractive: true,
-      callback: _updateTrimtabAngle,
-      key: trimTabKey,
-    );
+    // final trimTabKey = GlobalKey<CircleDragWidgetState>();
+    final trimTabControlWidget = _trimTabControlWidget;// CircleDragWidget(
+    //   width: 150,
+    //   height: 75,
+    //   lineLength: 60,
+    //   radius: 7,
+    //   resetOnRelease: false,
+    //   isInteractive: true,
+    //   callback: _updateTrimtabAngle,
+    //   key: _trimTabKey,
+    // );
 
-    final rudderControlWidget = RudderControlWidget();
+    final rudderControlWidget = _rudderControlWidget;
 
     ref.listen<String>(autonomousModeProvider, (_, selectedMode) {
       print(selectedMode);
@@ -473,7 +486,13 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 
   _updateTrimtabAngle(double angle) {
+    _trimTabControlWidget.setAngle(angle);
     _networkComms?.setTrimtabAngle(angle);
+  }
+
+  _updateRudderAngle(double angle) {
+    _rudderControlWidget.setAngle(angle);
+    _networkComms?.setRudderAngle(angle);
   }
 }
 
