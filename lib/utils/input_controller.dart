@@ -1,5 +1,8 @@
-import 'package:gamepads/gamepads.dart';
+
 import 'dart:async';
+import 'package:gamepads/gamepads.dart';
+import 'package:sailbot_telemetry_flutter/utils/gamepad_normalizer.dart';
+
 
 class ModeEdge {
   bool isPressed = false;
@@ -13,7 +16,7 @@ class ModeEdge {
   // Call this for each analog event from your "button 4" axis
   // raw can be int (-32768..32767) or double (-1..1 or 0..1)
   bool update(num raw) {
-    final v = _normalize(raw);      // -> [0..1] makes thresholds easy
+    final v = raw;      // -> [0..1] makes thresholds easy
     final now = DateTime.now();
 
     // Rising edge: not pressed -> pressed
@@ -22,7 +25,6 @@ class ModeEdge {
       if (now.difference(lastFire) >= cooldown) {
         isPressed = true;
         lastFire = now;
-        // print("hit");
         return true; // FIRE: one press detected
       }
     }
@@ -32,23 +34,6 @@ class ModeEdge {
       isPressed = false;
     }
     return false; // no new press
-  }
-
-  double _normalize(num raw) {
-    // Common cases:
-    // - int axis: -32768..32767  (triggers sometimes rest at -32768)
-    // - double axis: -1..1 or 0..1
-    double v;
-    if (raw is int) {
-      v = raw / 32767.0; // now ~[-1..1]
-    } else {
-      v = raw.toDouble(); // assume already normalized
-    }
-
-    // If trigger rests near -1 and increases to +1, remap to [0..1]:
-    // Adjust this depending on your device—if yours is already [0..1], just return v.
-    final vv = ((v + 1.0) / 2.0).clamp(0.0, 1.0);
-    return vv;
   }
 }
 
@@ -81,27 +66,35 @@ class InputController {
   void start() {
     // 1) Listen to events -> update pressed/axis states
     _sub = Gamepads.events.listen((event) {
-      print(event);
-      final k = event.key.toString();
-      final v = event.value; // 0/1 for buttons, or analog for axes
+      final rawKey = event.key;
+      final rawVal = event.value; // 0/1 for buttons, or analog for axes
+
+      final canon = normalizeButton(
+        rawKey: rawKey,
+        rawValue: rawVal,
+      );
+
+      if (canon == null) return;
+
 
       // SAFETY: Only act on buttons you care about.
       // Map your button numbers clearly (example mapping):
       // '6' = rudderRight, '7' = rudderLeft
       // '1' = trimtabRight, '3' = trimtabLeft
       // '10' = center rudder, '2' = center trim
+      // 4 = mode cycle
+      // 5 = tack
 
-      if (k == '6') rudderRight = (v == 1);
-      if (k == '7') rudderLeft  = (v == 1);
+      if (canon.key == '7') rudderLeft = canon.pressed;
+      if (canon.key == '6') rudderRight = canon.pressed;
+      if (canon.key == '1') trimtabRight = canon.pressed;
+      if (canon.key == '3') trimtabLeft  = canon.pressed;
+      if (canon.key == '10') centerRudder = canon.pressed;
+      if (canon.key == '11') centerTrim   = canon.pressed;
+      
 
-      if (k == '1') trimtabRight = (v == 1);
-      if (k == '3') trimtabLeft  = (v == 1);
-
-      if (k == '10') centerRudder = (v == 1);
-      if (k == '11')  centerTrim   = (v == 1);
-
-      if(k == '5'){
-        if (modeEdge.update(event.value)) {   // true only on rising edge (debounced)
+      if(canon.key == '5'){
+        if (modeEdge.update(canon.value)) {   // true only on rising edge (debounced)
           // print("TACK!");
           onTack?.call();
           centerRudder = true; // auto center rudder on tack
@@ -110,8 +103,8 @@ class InputController {
 
          }
 
-      if (event.key == '4') {                  
-        if (modeEdge.update(event.value)) {   // true only on rising edge (debounced)
+      if (canon.key == '4') {                  
+        if (modeEdge.update(canon.value)) {   // true only on rising edge (debounced)
           mode += 1;
           if (mode > 4) mode = 1;
           if (mode == 1) onAutoMode?.call('NONE');

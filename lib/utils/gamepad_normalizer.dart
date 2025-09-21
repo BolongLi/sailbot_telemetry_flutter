@@ -41,7 +41,6 @@ CanonButton? normalizeButton({
   String? canonKey;
   if (isAndroid) {
     canonKey = _androidKeyToCanonical(rawKey);
-    print("mapped: $canonKey");
     if (canonKey == null) return null;
   } else {
     canonKey = rawKey;
