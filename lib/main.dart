@@ -26,7 +26,7 @@ import 'package:sailbot_telemetry_flutter/submodules/telemetry_messages/dart/boa
 import 'package:sailbot_telemetry_flutter/widgets/rudder_control_widget.dart';
 import 'package:gamepads/gamepads.dart';
 import 'dart:async';
-
+import 'package:sailbot_telemetry_flutter/utils/gamepad_normalizer.dart';
 
 import 'dart:developer' as dev;
 
@@ -49,7 +49,7 @@ class ModeEdge {
   // Call this for each analog event from your "button 4" axis
   // raw can be int (-32768..32767) or double (-1..1 or 0..1)
   bool update(num raw) {
-    final v = _normalize(raw);      // -> [0..1] makes thresholds easy
+    final v = raw;      // -> [0..1] makes thresholds easy
     final now = DateTime.now();
 
     // Rising edge: not pressed -> pressed
@@ -117,26 +117,37 @@ class InputController {
   void start() {
     // 1) Listen to events -> update pressed/axis states
     _sub = Gamepads.events.listen((event) {
-      final k = event.key.toString();
-      final v = event.value; // 0/1 for buttons, or analog for axes
+      final rawKey = event.key;
+      final rawVal = event.value; // 0/1 for buttons, or analog for axes
+      print(rawKey);
+      final canon = normalizeButton(
+        rawKey: rawKey,
+        rawValue: rawVal,
+      );
+
+      if (canon == null) return;
+      // print(canon.key);
+      // print(canon.pressed);
+      // print(canon.value);
 
       // SAFETY: Only act on buttons you care about.
       // Map your button numbers clearly (example mapping):
       // '6' = rudderRight, '7' = rudderLeft
       // '1' = trimtabRight, '3' = trimtabLeft
       // '10' = center rudder, '2' = center trim
+      // 4 = mode cycle
+      // 5 = tack
+      print(canon.key);
+      if (canon.key == '7') rudderLeft = canon.pressed;
+      if (canon.key == '6') rudderRight = canon.pressed;
+      if (canon.key == '1') trimtabRight = canon.pressed;
+      if (canon.key == '3') trimtabLeft  = canon.pressed;
+      if (canon.key == '10') centerRudder = canon.pressed;
+      if (canon.key == '11') centerTrim   = canon.pressed;
+      
 
-      if (k == '6') rudderRight = (v == 1);
-      if (k == '7') rudderLeft  = (v == 1);
-
-      if (k == '1') trimtabRight = (v == 1);
-      if (k == '3') trimtabLeft  = (v == 1);
-
-      if (k == '10') centerRudder = (v == 1);
-      if (k == '11')  centerTrim   = (v == 1);
-
-      if(k == '5'){
-        if (modeEdge.update(event.value)) {   // true only on rising edge (debounced)
+      if(canon.key == '5'){
+        if (modeEdge.update(canon.value)) {   // true only on rising edge (debounced)
           // print("TACK!");
           onTack?.call();
           centerRudder = true; // auto center rudder on tack
@@ -145,9 +156,10 @@ class InputController {
 
          }
 
-      if (event.key == '4') {                  
-        if (modeEdge.update(event.value)) {   // true only on rising edge (debounced)
+      if (canon.key == '4') {                  
+        if (modeEdge.update(canon.value)) {   // true only on rising edge (debounced)
           mode += 1;
+          print("mode: $mode");
           if (mode > 4) mode = 1;
           if (mode == 1) onAutoMode?.call('NONE');
           if (mode == 2) onAutoMode?.call('BALLAST');
@@ -176,8 +188,8 @@ class InputController {
       } else {
         // apply manual increments from pressed flags
         if (centerRudder) rudderAngle = 0.0;
-        if (rudderRight) rudderAngle += step;
-        if (rudderLeft)  rudderAngle -= step;
+        if (rudderRight) rudderAngle += (step+0.075);
+        if (rudderLeft)  rudderAngle -= (step+0.075);
         rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
         onRudder?.call(rudderAngle);
       }
@@ -190,11 +202,12 @@ class InputController {
         }
       } else {
         if (centerTrim)   trimtabAngle = 0.0;
-        if (trimtabRight) trimtabAngle += step;
-        if (trimtabLeft)  trimtabAngle -= step;
+        if (trimtabRight) trimtabAngle -= (step-0.075);
+        if (trimtabLeft)  trimtabAngle += (step-0.075);
         trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
         onTrimtab?.call(trimtabAngle);
       }
+      // print("Rudder: $rudderAngle Trimtab: $trimtabAngle");
     });
   }
 
@@ -263,6 +276,7 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp> {
   NetworkComms? _networkComms;
   final GlobalKey<CircleDragWidgetState> _trimTabKey =GlobalKey<CircleDragWidgetState>();
+  final FocusNode _rootFocus = FocusNode();
   late final RudderControlWidget _rudderControlWidget = RudderControlWidget();
   late final CircleDragWidget _trimTabControlWidget = CircleDragWidget(
   width: 150,
@@ -278,6 +292,11 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
+
+    // Request focus once after first frame so the Flutter view is focused
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _rootFocus.requestFocus();
+    });
 
     final ic = ref.read(inputControllerProvider);
 
@@ -297,6 +316,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void dispose() {
     ref.read(inputControllerProvider).stop();
+    _rootFocus.dispose();
     super.dispose();
   }
 
@@ -319,10 +339,10 @@ class _MyAppState extends ConsumerState<MyApp> {
     // this is only used to reset the autonomous mode to NONE when we reconnect, comment out when we don't have a robot to connect to
     // because it gets called on every try of rebuild connection which is very often
 
-    // ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
-    //   _networkComms = networkComms;
-    //   ref.read(autonomousModeProvider.notifier).state = 'NONE';
-    // });
+    ref.listen<NetworkComms?>(networkCommsProvider, (_, networkComms) {
+      _networkComms = networkComms;
+      ref.read(autonomousModeProvider.notifier).state = 'NONE';
+    });
     _networkComms = ref.watch(networkCommsProvider);
     ref.read(ros2NetworkCommsProvider.notifier).initialize();
     // final trimTabKey = GlobalKey<CircleDragWidgetState>();
@@ -382,12 +402,19 @@ class _MyAppState extends ConsumerState<MyApp> {
         useMaterial3: true,
       ),
       // Disable Android's jank-ass overscroll animation
+      // builder: (context, child) {
+      //   return ScrollConfiguration(
+      //     behavior: CustomScrollBehavior(),
+      //     child: child!,
+      //   );
+      // },
       builder: (context, child) {
-        return ScrollConfiguration(
-          behavior: CustomScrollBehavior(),
-          child: child!,
+        return Focus(
+          focusNode: _rootFocus,
+          autofocus: true,     // requests focus too; PostFrame callback is a backup
+          child: child ?? const SizedBox.shrink(),
         );
-      },
+      }, 
       home: Scaffold(
           drawer: const NodesDrawer(),
           endDrawer: const SettingsDrawer(),
