@@ -1,6 +1,7 @@
 // lib/input/gamepad_normalizer.dart
 
 import 'dart:io' show Platform;
+import 'package:gamepads/gamepads.dart';
 
 class CanonButton {
   final String key;   // canonical key like '6','7', etc.
@@ -10,7 +11,7 @@ class CanonButton {
   CanonButton({
     required this.key,
     required this.pressed,
-    required this.value,
+    required this.value
   });
 }
 
@@ -26,6 +27,10 @@ String? _androidKeyToCanonical(String androidKey) {
     case 'KEYCODE_BUTTON_START': return '11';
     case 'AXIS_GAS': return '4';
     case 'AXIS_BRAKE': return '5';
+    case 'AXIS_X': return '2';  // left stick horizontal
+    case 'AXIS_Y': return '2';  // left stick vertical 
+    case 'AXIS_Z': return '8';  // right stick horizontal
+    case 'AXIS_RZ': return '8'; // right stick vertical
     default: return null;
   }
 }
@@ -34,6 +39,7 @@ String? _androidKeyToCanonical(String androidKey) {
 CanonButton? normalizeButton({
   required String rawKey,
   required num rawValue,
+  required KeyType type,
 }) {
   final bool isAndroid = Platform.isAndroid;
 
@@ -47,8 +53,16 @@ CanonButton? normalizeButton({
   }
 
   // 2) normalize pressed state
-  final bool pressed = isAndroid ? (rawValue == 0) : (rawValue == 1);
-  final num value = (rawValue > 1 || rawValue < 0) ? _normalize(rawValue) : rawValue;
+  bool pressed;
+  // print("rawValue: $rawValue");
+  // print("isAndroid: $isAndroid");
+ 
+  if(type == KeyType.analog) {
+    pressed = isAndroid ? (rawValue >0.05 || rawValue < -0.05) : (rawValue >1000 || rawValue < -1000);
+  }else{
+    pressed = isAndroid ? (rawValue == 0) : (rawValue == 1);
+  }
+  num value = isAndroid ? rawValue : _normalize(rawValue);
   // print("am I android? $isAndroid");
   // print("am I linux? ${Platform.isLinux}");
 
@@ -60,14 +74,10 @@ double _normalize(num raw) {
     // - int axis: -32768..32767  (triggers sometimes rest at -32768)
     // - double axis: -1..1 or 0..1
     double v;
-    if (raw is int) {
-      v = raw / 32767.0; // now ~[-1..1]
-    } else {
-      v = raw.toDouble(); // assume already normalized
-    }
+    v = raw / 32767.0; // now ~[-1..1]
 
     // If trigger rests near -1 and increases to +1, remap to [0..1]:
     // Adjust this depending on your device—if yours is already [0..1], just return v.
     final vv = ((v + 1.0) / 2.0).clamp(0.0, 1.0);
-    return vv;
+    return v;
   }

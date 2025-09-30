@@ -281,11 +281,13 @@ class _MyAppState extends ConsumerState<MyApp> {
   _updateTrimtabAngle(double angle) {
     _trimTabControlWidget.setAngle(angle);
     _networkComms?.setTrimtabAngle(angle);
+    ref.read(inputControllerProvider).trimtabAngle = angle;
   }
 
   _updateRudderAngle(double angle) {
     _rudderControlWidget.setAngle(angle);
     _networkComms?.setRudderAngle(angle);
+    ref.read(inputControllerProvider).rudderAngle = angle;
   }
 }
 
@@ -300,3 +302,40 @@ class CustomScrollBehavior extends ScrollBehavior {
     );
   }
 }
+
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │                        Flutter Telemetry Application                    │
+// │  ┌─────────────────┐  ┌──────────────────┐  ┌─────────────────────────┐ │
+// │  │   Gamepad UI    │  │   Map Interface  │  │   Control Widgets       │ │
+// │  │                 │  │                  │  │                         │ │
+// │  └─────────────────┘  └──────────────────┘  └─────────────────────────┘ │
+// │                                │                                        │
+// │                         ┌──────▼──────┐                                 │
+// │                         │ gRPC Client │                                 │
+// │                         └──────┬──────┘                                 │
+// └────────────────────────────────┼────────────────────────────────────────┘
+//                                  │ gRPC Protocol (Port 50051)
+//                                  ▼
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │                           ROS2 Boat System                              │
+// │  ┌────────────────────────────────────────────────────────────────────┐ │
+// │  │                    NetworkComms Node                               │ │
+// │  │  ┌─────────────────┐  ┌──────────────────┐  ┌───────────────────┐  │ │
+// │  │  │   gRPC Server   │  │  Topic Bridge    │  │  State Manager    │  │ │
+// │  │  │                 │  │                  │  │                   │  │ │
+// │  │  └─────────────────┘  └──────────────────┘  └───────────────────┘  │ │
+// │  └─────────────────────────────────────────────────────────────────────┘│
+// │                                │                                        │
+// │                         ROS2 Topics & Services                          │
+// │                                │                                        │
+// │  ┌──────────────┬──────────────┼──────────────┬─────────────────────────┤
+// │  │              │              │              │                         │
+// │  ▼              ▼              ▼              ▼                         │
+// │┌─────────────┐┌──────────────┐┌─────────────┐┌───────────────────────┐  │
+// ││Path         ││Control       ││Sensor       ││Hardware Controllers   │  │
+// ││Generation   ││System        ││Processing   ││                       │  │
+// ││             ││              ││             ││ • PWM Controller      │  │
+// ││• path_gen   ││• path_fol_vf ││• airmar     ││ • Trim Tab Comms      │  │
+// ││• waypoints  ││• station_keep││• wind_calc  ││ • Camera System       │  │
+// │└─────────────┘└──────────────┘└─────────────┘└───────────────────────┘  │
+// └─────────────────────────────────────────────────────────────────────────┘

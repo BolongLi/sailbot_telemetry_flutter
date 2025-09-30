@@ -37,24 +37,44 @@ class ModeEdge {
   }
 }
 
-
+enum InputAction {
+  none,
+  rudderLeft,
+  rudderRight,
+  trimtabLeft,
+  trimtabRight,
+  centerRudder,
+  centerTrim,
+  leftJoyStick,
+  rightJoyStick
+}
+InputAction currentAction = InputAction.none;
 class InputController {
   // Pressed states
-  bool rudderLeft = false;
-  bool rudderRight = false;
-  bool trimtabLeft = false;
-  bool trimtabRight = false;
-  bool centerRudder = false;
-  bool centerTrim = false;
+  // bool rudderLeft = false;
+  // bool rudderRight = false;
+  // bool trimtabLeft = false;
+  // bool trimtabRight = false;
+  // bool centerRudder = false;
+  // bool centerTrim = false;
   int mode = 1;
   final modeEdge = ModeEdge(pressHigh: 0.6, releaseLow: 0.4);
   bool lockRudder = false;
   bool lockTrim   = false;
+  bool rudderNotLockedYet = true;
+  bool trimNotLockedYet = true;
+
+  final List<double> _rudderHistory = [];
+  final List<double> _trimHistory = [];
+  static const int _historySize = 5; // Number of samples to average
+
 
   StreamSubscription? _sub;
   Timer? _tick;
   double rudderAngle = 0.0;
   double trimtabAngle = 0.0;
+  double rudderAngle_t = 0.0;
+  double trimtabAngle_t = 0.0;
 
   // External callbacks (inject your NetworkComms)
   void Function(double)? onRudder;
@@ -72,33 +92,74 @@ class InputController {
       final canon = normalizeButton(
         rawKey: rawKey,
         rawValue: rawVal,
+        type: event.type
       );
+      // print('rawval: $rawVal');
 
       if (canon == null) return;
-
+      // print(canon.key);
 
       // SAFETY: Only act on buttons you care about.
       // Map your button numbers clearly (example mapping):
       // '6' = rudderRight, '7' = rudderLeft
       // '1' = trimtabRight, '3' = trimtabLeft
       // '10' = center rudder, '2' = center trim
+      // '2' = left joystick (rudder) '8' = right joystick (trimtab)
       // 4 = mode cycle
       // 5 = tack
 
-      if (canon.key == '7') rudderLeft = canon.pressed;
-      if (canon.key == '6') rudderRight = canon.pressed;
-      if (canon.key == '1') trimtabRight = canon.pressed;
-      if (canon.key == '3') trimtabLeft  = canon.pressed;
-      if (canon.key == '10') centerRudder = canon.pressed;
-      if (canon.key == '11') centerTrim   = canon.pressed;
-      
+      if (canon.key == '7') {
+        currentAction = canon.pressed ? InputAction.rudderLeft : InputAction.none;
+      }
+      if (canon.key == '6') {
+        currentAction = canon.pressed ? InputAction.rudderRight : InputAction.none;
+      }
+      if (canon.key == '1' ) {
+        currentAction = canon.pressed ? InputAction.trimtabRight : InputAction.none;
+      }
+      if (canon.key == '3' ) {
+          currentAction = canon.pressed ? InputAction.trimtabLeft : InputAction.none;
+      }
+
+      if (canon.key == '2') {
+          if (canon.pressed) {
+          currentAction = InputAction.leftJoyStick;
+          rudderAngle_t = canon.value * 1.5;
+          
+        } else {
+          currentAction = InputAction.centerRudder;
+          rudderAngle_t = 0;
+        }
+        // print(canon.value);
+        // print(canon.pressed);
+
+      }
+      if (canon.key == '8') {
+        if (canon.pressed) {
+          currentAction = InputAction.rightJoyStick;
+          trimtabAngle_t = canon.value * 1.5;
+        } else {
+          currentAction = InputAction.centerTrim;
+          trimtabAngle_t = 0;
+        }
+      }
+
+      if (canon.key == '10') {
+        currentAction = canon.pressed ? InputAction.centerRudder : InputAction.none;
+      }
+      if (canon.key == '11') {
+        currentAction = canon.pressed ? InputAction.centerTrim : InputAction.none;
+      }
+
 
       if(canon.key == '5'){
         if (modeEdge.update(canon.value)) {   // true only on rising edge (debounced)
           // print("TACK!");
           onTack?.call();
-          centerRudder = true; // auto center rudder on tack
-          centerTrim = true;   // auto center trimtab on tack
+          // centerRudder = true;
+          // centerTrim = true;  
+          currentAction = InputAction.centerTrim; // auto center trimtab on tack
+          currentAction = InputAction.centerRudder;  // auto center rudder on tack
         }
 
          }
@@ -120,38 +181,79 @@ class InputController {
 
     const dt = Duration(milliseconds: 33); // ~30 FPS 
     _tick = Timer.periodic(dt, (_) {
-      const step = 0.15; // increment per tick; tune this
+      const step = 0.08; // increment per tick; tune this
       const minAngle = -1.5;
       const maxAngle =  1.5;
 
       // === Rudder ===
       if (lockRudder) {
         // Center once and only send if changed (avoid spamming)
-        if (rudderAngle != 0.0) {
+        if (rudderAngle != 0.0 && rudderNotLockedYet) {
           rudderAngle = 0.0;
           onRudder?.call(rudderAngle);
+          rudderNotLockedYet = false;
         }
       } else {
         // apply manual increments from pressed flags
-        if (centerRudder) rudderAngle = 0.0;
-        if (rudderRight) rudderAngle += (step+0.075);
-        if (rudderLeft)  rudderAngle -= (step+0.075);
-        rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
-        onRudder?.call(rudderAngle);
+        switch (currentAction) {
+          case InputAction.centerRudder:
+            rudderAngle = 0.0;
+            onRudder?.call(rudderAngle);
+            break;
+          case InputAction.rudderLeft:
+            rudderAngle -= (step);
+            rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
+            onRudder?.call(rudderAngle);
+            break;
+          case InputAction.rudderRight:
+            rudderAngle += (step);
+            rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
+            onRudder?.call(rudderAngle);
+            break;
+          case InputAction.leftJoyStick:
+            rudderAngle = _smoothValue(_rudderHistory, rudderAngle_t); // Smooth the value
+            print("targetRudder: $rudderAngle_t");
+            print("rudderAngle: $rudderAngle");
+            onRudder?.call(rudderAngle);
+            break;
+          default:
+            break;
+        }
+        rudderNotLockedYet = true;
       }
 
       // === Trimtab ===
       if (lockTrim) {
-        if (trimtabAngle != 0.0) {
+        if (trimtabAngle != 0.0 && trimNotLockedYet) {
           trimtabAngle = 0.0;
           onTrimtab?.call(trimtabAngle);
+          trimNotLockedYet = false;
         }
       } else {
-        if (centerTrim)   trimtabAngle = 0.0;
-        if (trimtabRight) trimtabAngle -= (step-0.075);
-        if (trimtabLeft)  trimtabAngle += (step-0.075);
-        trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
-        onTrimtab?.call(trimtabAngle);
+        switch (currentAction) {
+          case InputAction.centerTrim:
+            trimtabAngle = 0.0;
+            onTrimtab?.call(trimtabAngle);
+            break;
+          case InputAction.trimtabLeft:
+            trimtabAngle += (step);
+            trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
+            onTrimtab?.call(trimtabAngle);
+            break;
+          case InputAction.trimtabRight:
+            trimtabAngle -= (step);
+            trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
+            onTrimtab?.call(trimtabAngle);
+            break;
+          case InputAction.rightJoyStick:
+            trimtabAngle = _smoothValue(_trimHistory, trimtabAngle_t); // Smooth the value
+            
+            onTrimtab?.call(trimtabAngle);
+            break;
+          default:
+            break;
+        }
+        trimNotLockedYet = true;
       }
       // print("Rudder: $rudderAngle Trimtab: $trimtabAngle");
     });
@@ -162,6 +264,16 @@ class InputController {
     _sub = null;
     _tick?.cancel();
     _tick = null;
+  }
+
+  double _smoothValue(List<double> history, double newValue) {
+    history.add(newValue);
+    if (history.length > _historySize) {
+      history.removeAt(0); // Remove oldest value
+    }
+    
+    // Return average of recent values
+    return history.reduce((a, b) => a + b) / history.length;
   }
 
   // Call this when mode or tack changes:
@@ -191,9 +303,9 @@ class InputController {
     lockRudder = true;
     lockTrim   = true;
     rudderAngle = 0.0;
-    trimtabAngle = 0.0;
+    // trimtabAngle = 0.0;
     onRudder?.call(0.0);
-    onTrimtab?.call(0.0);
+    // onTrimtab?.call(0.0);
     onTack?.call();
   }
 
@@ -203,3 +315,33 @@ class InputController {
   }
 
 }
+// ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+// │   Gamepad/User  │    │  Android/Linux  │    │     Flutter     │
+// │     Input       │───▶│   Event Layer   │───▶│   Application   │
+// └─────────────────┘    └─────────────────┘    └─────────────────┘
+//                                                        │
+//                        ┌─────────────────┐    ┌─────────────────┐
+//                        │   Riverpod      │    │   Gamepad       │
+//                        │   Providers     │◀───│   Normalizer    │
+//                        └─────────────────┘    └─────────────────┘
+//                                │
+//                        ┌─────────────────┐    ┌─────────────────┐
+//                        │  UI Widgets     │    │   NetworkComms  │
+//                        │  (setAngle)     │    │   gRPC Client   │
+//                        └─────────────────┘    └─────────────────┘
+//                                                        │
+//                                                ┌─────────────────┐
+//                                                │     Network     │
+//                                                │   (gRPC/Proto)  │
+//                                                └─────────────────┘
+//                                                        │
+// ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+// │     Physical    │    │     ESP32       │    │  ROS2 Network   │
+// │    Actuators    │◀───│   Controllers   │◀───│     Comms       │
+// │ (Rudder/Trim)   │    │  (Websockets)   │    │      Node       │
+// └─────────────────┘    └─────────────────┘    └─────────────────┘
+//                                                        │
+//                        ┌─────────────────┐    ┌─────────────────┐
+//                        │    Ballast      │    │   Heading/Path  │
+//                        │    Control      │◀───│   Controllers   │
+//                        └─────────────────┘    └─────────────────┘
