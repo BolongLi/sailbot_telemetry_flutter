@@ -82,6 +82,17 @@ class InputController {
   void Function()? onTack;
   void Function(String)? onAutoMode;
 
+  double rudderStep = 0.08;
+  double trimStep = 0.08;
+
+  void setRudderStep(double newStep) {
+    rudderStep = newStep;
+  }
+  
+  void setTrimStep(double newStep) {
+    trimStep = newStep;
+  }
+
   // Call once (e.g., in main widget init or provider init)
   void start() {
     // 1) Listen to events -> update pressed/axis states
@@ -181,7 +192,6 @@ class InputController {
 
     const dt = Duration(milliseconds: 33); // ~30 FPS 
     _tick = Timer.periodic(dt, (_) {
-      const step = 0.08; // increment per tick; tune this
       const minAngle = -1.5;
       const maxAngle =  1.5;
 
@@ -201,12 +211,12 @@ class InputController {
             onRudder?.call(rudderAngle);
             break;
           case InputAction.rudderLeft:
-            rudderAngle -= (step);
+            rudderAngle -= (rudderStep);
             rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
             onRudder?.call(rudderAngle);
             break;
           case InputAction.rudderRight:
-            rudderAngle += (step);
+            rudderAngle += (rudderStep);
             rudderAngle = rudderAngle.clamp(minAngle, maxAngle);
             onRudder?.call(rudderAngle);
             break;
@@ -236,12 +246,12 @@ class InputController {
             onTrimtab?.call(trimtabAngle);
             break;
           case InputAction.trimtabLeft:
-            trimtabAngle += (step);
+            trimtabAngle += (trimStep);
             trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
             onTrimtab?.call(trimtabAngle);
             break;
           case InputAction.trimtabRight:
-            trimtabAngle -= (step);
+            trimtabAngle -= (trimStep);
             trimtabAngle = trimtabAngle.clamp(minAngle, maxAngle);
             onTrimtab?.call(trimtabAngle);
             break;
