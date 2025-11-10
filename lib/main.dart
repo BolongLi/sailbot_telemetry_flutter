@@ -189,45 +189,58 @@ class _MyAppState extends ConsumerState<MyApp> {
             const Flex(direction: Axis.horizontal, children: <Widget>[
               Flexible(child: MapCameraWidget()),
             ]),
-            const Align(
-              alignment: Alignment.centerRight,
-              child: MapCameraToggle(),
-            ),
+            // const Align(
+            //   alignment: Alignment.centerRight,
+            //   child: MapCameraToggle(),
+            // ),
             DrawerIconWidget(_scaffoldState),
             AlignPositioned(
-                alignment: Alignment.bottomCenter,
-                centerPoint: Offset(displayWidth(context) / 1.5, 0),
+                alignment: Alignment.centerLeft,
+                centerPoint: Offset(displayWidth(context), displayHeight(context) / 3.5),
                 child: const HeadingSpeedDisplay()),
             AlignPositioned(
                 alignment: Alignment.centerRight,
-                centerPoint: Offset(0, displayHeight(context) / 2),
+                centerPoint: Offset(0, displayHeight(context) / 3.5),
                 child: const WindDirectionDisplay()),
             Align(
                 alignment: Alignment.topRight,
                 child: SettingsIconWidget(_scaffoldState)),
             Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                transform: Matrix4.translationValues(0, 120.0, 0),
-                width: 150,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(1),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.grey),
-                ),
-                child:
-                    Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
-                  const TrimStateWidget(),
-                  const Divider(
-                    color: Colors.grey,
-                    thickness: 1,
-                    indent: 5,
-                    endIndent: 5,
+                alignment: Alignment.topCenter,
+                child: Container(
+                  transform: Matrix4.translationValues(0, 0, 0),
+                  width: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey),
                   ),
-                  AutonomousModeSelector(),
-                ]),
+                  child: const TrimStateWidget(),  // ← Keep only this, remove Column/Divider/AutonomousModeSelector
+                ),
               ),
-            ),
+            // Align(
+            //   alignment: Alignment.centerRight,
+            //   child: Container(
+            //     transform: Matrix4.translationValues(0, 120.0, 0),
+            //     width: 150,
+            //     decoration: BoxDecoration(
+            //       color: Colors.white.withOpacity(1),
+            //       borderRadius: BorderRadius.circular(10),
+            //       border: Border.all(color: Colors.grey),
+            //     ),
+            //     child:
+            //         Column(mainAxisSize: MainAxisSize.min, children: <Widget>[
+            //       const TrimStateWidget(),
+            //       const Divider(
+            //         color: Colors.grey,
+            //         thickness: 1,
+            //         indent: 5,
+            //         endIndent: 5,
+            //       ),
+            //       AutonomousModeSelector(),
+            //     ]),
+            //   ),
+            // ),
             const PathPoint(),
             Align(
               alignment: Alignment.centerRight,

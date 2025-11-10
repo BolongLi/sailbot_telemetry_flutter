@@ -5,6 +5,10 @@ import 'package:sailbot_telemetry_flutter/utils/network_comms.dart';
 import 'package:sailbot_telemetry_flutter/utils/github_helper.dart';
 import 'package:sailbot_telemetry_flutter/widgets/cv_settings.dart';
 import 'package:sailbot_telemetry_flutter/main.dart'; 
+import 'package:sailbot_telemetry_flutter/widgets/autonomous_mode_selector.dart';
+import 'package:sailbot_telemetry_flutter/widgets/trim_state_widget.dart';
+import 'package:sailbot_telemetry_flutter/widgets/map_camera_widget.dart';
+
 import 'dart:developer' as dev;
 
 final vfForwardMagnitudeProvider = StateProvider<String>((ref) => '2.0');
@@ -80,21 +84,6 @@ class SettingsDrawer extends ConsumerWidget {
           ),
           ListTile(
             title: const Text("Rudder Control Step"),
-            subtitle: TextField(
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(hintText: lastRudderStep),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
-              ],
-              onSubmitted: ((String value) {
-                ref.read(rudderStepProvider.notifier).state = value;
-                inputController.setRudderStep(double.parse(value));
-              }),
-            ),
-          ),
-          ListTile(
-            title: const Text("Rudder Control Step"),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -111,7 +100,6 @@ class SettingsDrawer extends ConsumerWidget {
                     inputController.setRudderStep(value);
                   },
                 ),
-                Text(lastRudderStep),
               ],
             ),
           ),
@@ -133,25 +121,32 @@ class SettingsDrawer extends ConsumerWidget {
                     inputController.setTrimStep(value);
                   },
                 ),
-                Text(lastTrimStep), 
               ],
+            ),
+          ),
+          const ListTile(
+            title: Text(
+              "Display Settings",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          const ListTile(
+            title: Text("View Mode"),
+            subtitle: MapCameraToggle(), 
+          ),
+
+          const Divider(),
+          const ListTile(
+            title: Text(
+              "Control Mode",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           ListTile(
-            title: const Text("Trim Control Step"),
-            subtitle: TextField(
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(hintText: lastTrimStep),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
-              ],
-              onSubmitted: ((String value) {
-                ref.read(trimStepProvider.notifier).state = value;
-                inputController.setTrimStep(double.parse(value));
-              }),
-            ),
+            title: const Text("Autonomous Mode"),
+            subtitle: AutonomousModeSelector(),  
           ),
+          const Divider(),
           const CVSettings(),
         ],
       ),
